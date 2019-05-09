@@ -13,6 +13,6 @@
  * Write allocate (also called fetch on write): data at the missed-write location is loaded to cache, followed by a write-hit operation. In this approach, write misses are similar to read misses.。Write allocate：先把要写的数据载入到Cache中，写Cache，然后再通过flush方式写入到内存中；  写缺失操作与读缺失操作类似。
  * No-write allocate (also called write-no-allocate or write around): data at the missed-write location is not loaded to cache, and is written directly to the backing store. In this approach, only the reads are being cached。No write allocate：并不将写入位置读入缓存，直接把要写的数据写入到内存中。这种方式下，只有读操作会被缓存。
 
-[ss](http://test.com)
-
-![st](http://test.com)
+## CPU访问数据流程图:
+![Read allocate & Write allocate](https://github.com/YankunLi/doc/blob/master/cpu-readwrite-cache1.png#pic_center)
+![Read through & Write through](https://github.com/YankunLi/doc/blob/master/cpu-readwrite-cache2.png#pic_center)
