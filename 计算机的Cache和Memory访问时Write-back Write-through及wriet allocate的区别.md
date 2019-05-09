@@ -16,3 +16,5 @@
 ## CPU访问数据流程图:
 ![Read allocate & Write allocate](https://github.com/YankunLi/doc/blob/master/cpu-readwrite-cache1.png#pic_center)
 ![Read through & Write through](https://github.com/YankunLi/doc/blob/master/cpu-readwrite-cache2.png#pic_center)
+
+[Refer](http://www.cnblogs.com/guojingdeyuan/p/7626983.html)
