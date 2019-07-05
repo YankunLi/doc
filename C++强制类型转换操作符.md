@@ -3,7 +3,7 @@
 强制类型转换也称为显式转换，C++中强制类型转换操作符有static_cast、dynamic_cast、const_cast、reinterpert_cast四个。本节介绍static_cast操作符。
 
 ## static_cast
-### 替代任何隐式类型转换:
+### 用于任何基本类型间的转换:
 如:int与float,int与char, double与char,int与enum等;
 ```
 double a = 3.1415926;
@@ -11,7 +11,7 @@ int b = static_cast<int>(a);
 ```
 把精度大的转换成精度小的类型,static_cast使用位截断进行处理.
 
-### 将void&#42;类型转换成真实的类型
+### 将void&#42;类型转换成真实的类型的指针
 ```
 double a = 3.1415926;
 void * ptr = &a;
@@ -51,12 +51,12 @@ int main() {
     //基类指针转换成派生类指针,且该基类指针指向派生类对象
     Boat * bt = new FishingBoat;
     FishingBoat * fbt = static_cast<FishingBoat *>(bt);
-    fbt->GetName();
+    fbt->GetName(); //corrent
 
     //子类指针转换成基类指针
     FishingBoat * fbt = new FishingBoat;
     Boat * bt = static_cast<Boat *>(fbt);
-    bt->GetName();
+    bt->GetName(); //correct
 }
 ```
 ### static_cast可以把任何类型的表达式转换成void类型
