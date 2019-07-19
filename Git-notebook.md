@@ -18,6 +18,21 @@ git checkout -d {branch name}        //切换并创建分支
 ```
 git rebase -i {start point} [end point]
 ```
+
+## 展示某次提交的改动内容
+列举提交历史
+```
+git log
+```
+显示某次提交的内容
+```
+git show {commit-hashId}
+```
+显示某次提交对某个文件的改动
+```
+git show {commit-hashId} {filename}
+```
+
 ## 暂存修改的内容
 保存修改的内容,并添加描述信息
 ```
