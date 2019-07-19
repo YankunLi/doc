@@ -66,3 +66,23 @@ git stash drop stash@{$num}
 ```
 git stash clear
 ```
+
+## Git 版本回退
+列举可回退的版本号
+```
+git reflog
+```
+回退到某次提交,包括暂存区和工作区
+```
+git reset --hard {commit-hashId} [filepath] //所有提交保存没有提交的改动都被删除
+```
+回退到某次提交,回退到暂存区,可重新提交
+```
+git reset --soft {commit-hashId} [filepath]
+```
+回退到某次提交,回退到工作区,可重新add,再提交
+```
+git reset --mixed {commit-hashId} [filepath] //git reset {commit-hashId} [filepath] 默认方式
+```
+test
+
