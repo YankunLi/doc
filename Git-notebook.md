@@ -74,7 +74,7 @@ git reflog
 ```
 回退到某次提交,包括暂存区和工作区
 ```
-git reset --hard {commit-hashId} [filepath] 
+git reset --hard {commit-hashId} [filepath]
 ```
 回退到某次提交,回退到暂存区,可重新提交
 ```
