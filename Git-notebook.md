@@ -84,3 +84,10 @@ git reset --soft {commit-hashId} [filepath]
 ```
 git reset --mixed {commit-hashId} [filepath] //git reset {commit-hashId} [filepath] 默认方式
 ```
+
+## 合并其他分支
+分支A合并分支B
+```
+git checkout {A branch}
+git merge {B branch}
+```
