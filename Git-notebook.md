@@ -91,3 +91,18 @@ git reset --mixed {commit-hashId} [filepath] //git reset {commit-hashId} [filepa
 git checkout {A branch}
 git merge {B branch}
 ```
+
+## 合并某个分支上的某一次提交
+```
+git checkout {need changed branch}
+git cherry-pick {commit-hashnum in other branch}
+```
+如果出现冲突不能直接完成合并,需要解决冲突继续合并,或者直接放弃本次操作
+继续合并某一次提交
+```
+git cherry-pick --continue
+```
+放弃合并某一次提交
+```
+git cherry-pick --abort
+```
