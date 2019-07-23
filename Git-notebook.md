@@ -91,6 +91,14 @@ git reset --mixed {commit-hashId} [filepath] //git reset {commit-hashId} [filepa
 git checkout {A branch}
 git merge {B branch}
 ```
+解决冲突继续合并
+```
+git merge --continue
+```
+放弃合并
+```
+git merge --abort
+```
 
 ## 合并某个分支上的某一次提交
 ```
