@@ -114,3 +114,14 @@ git cherry-pick --continue
 ```
 git cherry-pick --abort
 ```
+
+## 合并某个分支的多个联系的提交
+对要合并的连续提交创建新的分支,如果要合并35sdc4d~sd45677
+```
+git checkout -b {new branch} sd45677
+```
+将连续的35sdc4d~sd45677提交到目标分支
+```
+git rebase --onto {targe branch} 35sdc4d^ //35sdc4d^ 表示从该提交开始
+```
+
