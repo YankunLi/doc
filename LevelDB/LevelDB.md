@@ -1,5 +1,5 @@
 # LevelDB 纪要：
----
+
 ## LevelDB 整体架构
 1. leveldb存储到磁盘上的数据是根据key值有序存储的；
 2. 用户可以自定义key值的比较函数，按照用户定义的比较规则有序存储
@@ -14,11 +14,11 @@
 10. sstable中的记录是根据key值有序存储的，并且level0中，两个文件有可能存在相同的key中重叠（为什么），其他层不会出现重叠现象（为什么）
 11. manifest文件管理所有的sstable文件信息，维护不同sstable文件所在层级，及该文件中key的最大最小值信息；
 12. current文件是用来指向manifest文件的，其内容就是manifest文件名，以为leveldb中的sstable文件是不断变化的，manifest文件也会跟着变化，所有current文件就是告诉我们那个manifest文件是当前可信的；
----
+
 ## LevelDB Log
 1. LevelDB 的log文件被等大小的逻辑划分成若干块,每块的大小位32KB,每次读取块大小的数据;
 2. LevelDB中的日子记录都有一个统一的格式,其中包括记录头(checksum,记录长度,类型), 记录体(数据):
-   > **checksum|记录长度|类型|数据**
+   **checksum|记录长度|类型|数据**
    1. **checksum**时类型和数据的的校验码,用于检查数据在存取过程中是否发生变化;
    2. **记录长度** 记录数据的大小;
    3. **类型** 记录该记录的逻辑结构与log的逻辑分块之间的关系, 其取值有四种:FULL/FIRST/MIDDLE/LAST:
