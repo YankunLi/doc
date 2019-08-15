@@ -52,5 +52,5 @@
 
 1. 数据索引和Footer结构,如下图:
 
-![data index and footer](./data_index_and_Footer.jpg#pic_center "数据索引和SSTable尾部结构")
+![data index and footer](https://github.com/YankunLi/doc/blob/master/LevelDB/data_index_and_Footer.jpg#pic_center "数据索引和SSTable尾部结构")
 
