@@ -50,4 +50,7 @@
    4. 文件尾部块
    > 注: LevelDB1.2中尚未使用元数据,和元数据索引;
 
-1. 
+1. 数据索引和Footer结构,如下图:
+
+![data index and footer](./data_index_and_Footer.jpg#pic_center "数据索引和SSTable尾部结构")
+
