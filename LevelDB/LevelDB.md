@@ -52,24 +52,24 @@
 
 * 数据索引和Footer结构:  
    **数据索引,如下图:**
-![data index](https://github.com/YankunLi/doc/blob/master/LevelDB/data_index.jpg#pic_center "数据索引")
+![data index](pictures/data_index.jpg#pic_center "数据索引")
     数据索引区的每条记录是对data block建立的索引信息,每条索引信息包含3部分内容:
       1. 第一个字段记录对应数据块中大于等于最大的那个Key的key, 即该key值一定大于等于该block中的所有key,但不一定在该block中;
       2. 第二个字段记录该data block在sstable文件中的偏移位置;
       3. 第三个字段记录该data block的大小(有时候数据是被压缩的)为什么;  
    **Footer,如下图:**  
-![sstable footer](https://github.com/YankunLi/doc/blob/master/LevelDB/sstable_footer.png#pic_center "sstable 尾部结构")
+![sstable footer](pictures/sstable_footer.png#pic_center "sstable 尾部结构")
       - Metaindex_handle记录metaindex block的起始位置和大小;
       - index_handle记录index block的起始位置和大小;
       - 其他就是填充数和魔数;
    **数据区, 如下图:**
-![data context](https://github.com/YankunLi/doc/blob/master/LevelDB/data_context.png#pic_center "data block 数据的内容")
+![data context](pictures/data_context.png#pic_center "data block 数据的内容")
    有上图可以看出data block中的数据部分,又可分为两大部分:
    - KV有序记录;
    - 重启点和重启点的个数;
 >> LevelDB中对Key有序存储,并且为了节省空间,起始的key值完全记录,后面的就只使用差异部分标示即可,当不能再使用这种方式时就再使用完全的key值记录,这个记录点就是重启点,即重新使用完全Key值记录的点;
    **记录格式,如图**
-![record format](https://github.com/YankunLi/doc/blob/master/LevelDB/record_format.png#pic_center "record format")
+![record format](pictures/record_format.png#pic_center "record format")
    记录根据内容可以分成5部分:
    - key的共享长度,即与前面的重启点key重叠的长度;
    - key的非共享长度, 即非重叠部分Key的长度;
