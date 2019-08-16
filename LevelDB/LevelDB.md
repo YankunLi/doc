@@ -58,7 +58,7 @@
       2. 第二个字段记录该data block在sstable文件中的偏移位置;
       3. 第三个字段记录该data block的大小(有时候数据是被压缩的)???;
    **Footer,如下图:**
-![stable footer](https://github.com/YankunLi/doc/blob/master/LevelDB/SSTable_footer.png#pic_center "sstable 尾部结构")
+![stable footer](https://github.com/YankunLi/doc/blob/master/LevelDB/sstable_footer.png#pic_center "sstable 尾部结构")
       - Metaindex_handle记录metaindex block的起始位置和大小;
       - index_handle记录index block的起始位置和大小;
       - 其他就是填充数和魔数;
