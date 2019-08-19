@@ -70,9 +70,9 @@
    **Footer,如下图:**  
 ![sstable footer](pictures/sstable_footer.png#pic_center "sstable 尾部结构")
 
-   - Metaindex_handle记录metaindex block的起始位置和大小;
-   - index_handle记录index block的起始位置和大小;
-   - 其他就是填充数和魔数;
+* Metaindex_handle记录metaindex block的起始位置和大小;
+* index_handle记录index block的起始位置和大小;
+* 其他就是填充数和魔数;
    **数据区, 如下图:**
 ![data context](pictures/data_context.png#pic_center "data block 数据的内容")
    有上图可以看出data block中的数据部分,又可分为两大部分:
@@ -86,14 +86,24 @@
 
 记录根据内容可以分成5部分:
 
-- key的共享长度,即与前面的重启点key重叠的长度;
-- key的非共享长度, 即非重叠部分Key的长度;
+* key的共享长度,即与前面的重启点key重叠的长度;
+* key的非共享长度, 即非重叠部分Key的长度;
       - value长度, 即value值的大小;
       - Key非共享内容, 即非共享部分Key的值;
       - value值, 即实际的value内容;
 
 ## MemTable
 
-   - MemTable 是一直维护在内存中,运行读写操作,当MemTable的大小达到阈值就会转换成immutable Memtable,immutable Memtable是只读的,并且将其dump到磁盘变成sstable文件;
-   - MemTable也提供了删除操作,其删除操作是延迟删除,即只标记Key值的删除,真正的删除在compaction过程中进行;
-   - MemTable中KV是有序的,内部通过SkipList来维存储维护其有序性;
+* MemTable 是一直维护在内存中,运行读写操作,当MemTable的大小达到阈值就会转换成immutable Memtable,immutable Memtable是只读的,并且将其dump到磁盘变成sstable文件;
+* MemTable也提供了删除操作,其删除操作是延迟删除,即只标记Key值的删除,真正的删除在compaction过程中进行;
+* MemTable中KV是有序的,内部通过SkipList来维存储维护其有序性;
+
+## LevelDB 更新操作(读写)
+
+LevelDB的更新操作示意图:
+![LevelDB Updata operation](picture/leveldb_update.png)
+
+* 插入`:`
+   将**KV**记录顺序写入到log文件中,写入成功之后再将记录插入到内存中的memtable表中,实际是插入到memtable内部的skiplist中,这样就完成了一次写入操作.
+* 删除`:`
+   将**K删除标记**记录顺序写log文件中,成功之后,就该记录更新到memtable表中,就完成删除操作,即LevelDB只做标记删除,正在的删除操作在compaction过程中完成.
