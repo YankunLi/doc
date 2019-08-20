@@ -107,3 +107,14 @@ LevelDB的更新操作示意图:
    将**KV**记录顺序写入到log文件中,写入成功之后再将记录插入到内存中的memtable表中,实际是插入到memtable内部的skiplist中,这样就完成了一次写入操作.
 * 删除`:`
    将**K删除标记**记录顺序写log文件中,成功之后,就该记录更新到memtable表中,就完成删除操作,即LevelDB只做标记删除,正在的删除操作在compaction过程中完成.
+* 读取`:`
+   由于LevelDB的设计,LevelDB的一个key的值可能存在多份,所以在从levelDB中读取某个key值时,就要有一定的顺序性保证读到最新的key值,其读取顺序如下:
+   Memtable -> Immutable Memtable -> LevelDB_0(按照sst文件新鲜度去查找key值) -> LevelDB_{0 + i}(i从1开始)
+      - 为什么在Level0中查找key值给其他Level中查找key值不同?
+         在LevelDB_0中查找某个key值和其他Level不同,主要是因为,Level_0中,key可能在多个sst文件中重复出现,所以要按照时间顺序(从最近创建时间的sst文件开始查找)在Level0文件中查找,而其他Level中key值在同一层中不存在重复现象;
+      - 如何定位key的位置?
+         主要分两步:
+               * 找到key所在的sst文件,key在sst文件中的分布都记录在manifest文件中,该文件在内存中有副本,可以快速查找;
+               * LevelDB一般先在内存中cache中查找该key,如果没有,则加载该key所在的sst的索引部分到cache中(只加载索引到cache),通过索引可以定位Key所在的block,最后在读取该block,对里面的内容一一比对,如果找到就直接返回,如果没有则继续向下一层继续查找;
+
+>> 注`:` manifest文件中记载了level和对应文件及文件里key的信息范围,LevelDB在内存中保留这种映射表.
