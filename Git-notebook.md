@@ -1,39 +1,52 @@
+# Git
+
 ## 建立本地分支与远端分支映射关系
-```
+
+```git
 git config --set-upstream-to {remote repository addr}/{remote branch name} {local branch name}
 ```
 
 ## 查看本地分支与远程分支的映射关系:
-```
+
+```git
 git branch -vv
 ```
 
 ## 切换分支
-```
+
+```git
 git checkout {branch name}           //该分支必须已经存在
 git checkout -d {branch name}        //切换并创建分支
 ```
 
 ## 合并多次提交使提交历史更干净
-```
+
+```git
 git rebase -i {start point} [end point]
 ```
 
 ## 展示某次提交的改动内容
+
 列举提交历史
+
+```#git
+    git log
 ```
-git log
-```
+
 显示某次提交的内容
-```
+
+```git
 git show {commit-hashId}
 ```
+
 显示某次提交对某个文件的改动
-```
+
+```git
 git show {commit-hashId} {filename}
 ```
 
 ## 暂存修改的内容
+
 保存修改的内容,并添加描述信息
 ```
 git stash save "desc message"
@@ -68,6 +81,7 @@ git stash clear
 ```
 
 ## Git 版本回退
+
 列举可回退的版本号
 ```
 git reflog
@@ -86,6 +100,7 @@ git reset --mixed {commit-hashId} [filepath] //git reset {commit-hashId} [filepa
 ```
 
 ## 合并其他分支
+
 分支A合并分支B
 ```
 git checkout {A branch}
@@ -101,6 +116,7 @@ git merge --abort
 ```
 
 ## 合并某个分支上的某一次提交
+
 ```
 git checkout {need changed branch}
 git cherry-pick {commit-hashnum in other branch}
@@ -116,6 +132,7 @@ git cherry-pick --abort
 ```
 
 ## 合并某个分支的多个联系的提交
+
 对要合并的连续提交创建新的分支,如果要合并35sdc4d~sd45677
 ```
 git checkout -b {new branch} sd45677
@@ -124,4 +141,3 @@ git checkout -b {new branch} sd45677
 ```
 git rebase --onto {targe branch} 35sdc4d^ //35sdc4d^ 表示从该提交开始
 ```
-
