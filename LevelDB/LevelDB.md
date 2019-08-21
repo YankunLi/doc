@@ -102,7 +102,7 @@
 
 LevelDB的更新操作示意图:
 
-![LevelDB Updata operation](picture/leveldb_update.png#pic_center "update operation")
+![LevelDB Updata operation](pictures/leveldb_update.png#pic_center "update operation")
 
 * 插入`:`  
    将**KV**记录顺序写入到log文件中,写入成功之后再将记录插入到内存中的memtable表中,实际是插入到memtable内部的skiplist中,这样就完成了一次写入操作.
@@ -111,14 +111,39 @@ LevelDB的更新操作示意图:
 * 读取`:`  
    由于LevelDB的设计,LevelDB的一个key的值可能存在多份,所以在从levelDB中读取某个key值时,就要有一定的顺序性保证读到最新的key值,其读取顺序如下:
 
-![LevelDB read operation](picture/leveldb_read.png)
+![LevelDB read operation](pictures/leveldb_read.png#pic_center "leveldb read")  
+**Memtable -> Immutable Memtable -> LevelDB_0(按照sst文件新鲜度去查找key值) -> LevelDB_{0 + i}(i从1开始)**
 
-   ** Memtable -> Immutable Memtable -> LevelDB_0(按照sst文件新鲜度去查找key值) -> LevelDB_{0 + i}(i从1开始) **  
-      - 为什么在Level0中查找key值给其他Level中查找key值不同?  
+* 为什么在Level0中查找key值给其他Level中查找key值不同?  
          在LevelDB_0中查找某个key值和其他Level不同,主要是因为,Level_0中,key可能在多个sst文件中重复出现,所以要按照时间顺序(从最近创建时间的sst文件开始查找)在Level0文件中查找,而其他Level中key值在同一层中不存在重复现象;
-      - 如何定位key的位置?  
-         主要分两步:  
-               * 找到key所在的sst文件,key在sst文件中的分布都记录在manifest文件中,该文件在内存中有副本,可以快速查找;  
-               * LevelDB一般先在内存中cache中查找该key,如果没有,则加载该key所在的sst的索引部分到cache中(只加载索引到cache),通过索引可以定位Key所在的block,最后在读取该block,对里面的内容一一比对,如果找到就直接返回,如果没有则继续向下一层继续查找;
+* 如何定位key的位置?  
+   主要分两步:
+      - 找到key所在的sst文件,key在sst文件中的分布都记录在manifest文件中,该文件在内存中有副本,可以快速查找;  
+      - LevelDB一般先在内存中cache中查找该key,如果没有,则加载该key所在的sst的索引部分到cache中(只加载索引到cache),通过索引可以定位Key所在的block,最后在读取该block,对里面的内容一一比对,如果找到就直接返回,如果没有则继续向下一层继续查找;
 
->> 注`:` manifest文件中记载了level和对应文件及文件里key的信息范围,LevelDB在内存中保留这种映射表.
+> 注`:` manifest文件中记载了level和对应文件及文件里key的信息范围,LevelDB在内存中保留这种映射表.
+
+## compaction操作:
+
+   LevelDB compaction操作是为了将已经标记删除的key物理清除,重复的key值做一个合并,丢弃老的值只保留最新的key值,以达到减少sst文件规模,提供Key值的访问速度;
+   > LevelDB的compaction操作基本类似与bigtable,bigtable中包括三种compaction操作: minor，major和full; minor是将memtable到处sstable文件,major是合并不同level的sstable文件,full是合并所有sstable文件;
+
+   LevelDB包括两种compaction操作, minor/major:
+
+1. **minor compaction**操作是当内存中的memtable大小达到了一定的阈值,其内容就会被保存到磁盘文件sst中.如图:
+
+![minor compaction](pictures/leveldb_minor_compaction.png)  
+
+   图中展示了,memtable中的数据达到一定的量之后,转成immutable memtable,该memtable只支持读,不能更新,然后再顺序性遍历immutable中的key,保存到新的sstable文件中,最后建立文件的index索引,整个minor compaction过程就结束了.minor compaction过程中遇到标记删除的key也不会实际删除,只是将该记录保存到sstable文件中,memtable内部是skiplist维护keys,只知道key被标记删除,但是kv数据还是不清楚在哪里,并且要找到kv数据的位置需要很复杂的查找,所以物理清除KV值的工作有major compaction来完成.  
+2. **major compaction** 是当某层sstable文件数超出一定的量时,LevelDB会从这个level的sstable文件中选择一个文件(level>0),将其和高一层的sstable文件合并的过程.
+
+* 在做level0和level1层的major compaction时,可能要选择level0中的多个文件与level1进行合并,原因是一个key可能在多个sstable中出现.
+* 以key为标准轮流选择sstable文件做major compaction,即选择紧挨着上次key范围的sstable文件,做major compaction.
+* 在做非level0以外的其他层major compaction时,在选择levelL A sstable文件后再在levelL+1层选择和A文件存在重复key中的所有sstable文件,做major compaction,这个也是为什么非level0成的sstable文件之间不存在重复的key;
+* major compaction会把标记删除的key,在小于当前level中出现的key(),丢弃掉,
+
+![sstable compaction](pictures/leveldb_sstable_compaction.png#pictures_center "sstable compaction")
+
+major compaction采用多路归并排行方式,合并多个sstable文件中的记录,进行重新排序.
+
+> 任何level sstable文件中的key都是有序的,level0层的不同sstable文件中存在重复的key值(主要是因为level0是由memtable直接生成的),其他层中不存在重复的key;
