@@ -123,7 +123,7 @@ LevelDB的更新操作示意图:
 
 > 注`:` manifest文件中记载了level和对应文件及文件里key的信息范围,LevelDB在内存中保留这种映射表.
 
-## compaction操作:
+## compaction操作`:`
 
    LevelDB compaction操作是为了将已经标记删除的key物理清除,重复的key值做一个合并,丢弃老的值只保留最新的key值,以达到减少sst文件规模,提供Key值的访问速度;
    > LevelDB的compaction操作基本类似与bigtable,bigtable中包括三种compaction操作: minor，major和full; minor是将memtable到处sstable文件,major是合并不同level的sstable文件,full是合并所有sstable文件;
@@ -147,3 +147,25 @@ LevelDB的更新操作示意图:
 major compaction采用多路归并排行方式,合并多个sstable文件中的记录,进行重新排序.
 
 > 任何level sstable文件中的key都是有序的,level0层的不同sstable文件中存在重复的key值(主要是因为level0是由memtable直接生成的),其他层中不存在重复的key;
+
+## LevelDB中的cache`:`
+
+LevelDB包括两种不同的cache: Table Cache和Block Cache.
+
+* Table Cache
+Table Cache主要缓存sstable相关的信息,sstable文件信息,sstable文件中的索引:
+![leveldb table cache](pictures/leveldb_table_cache.png#pic_center "Table Cache")  
+如图中Table Cache,Key是sstable的文件名,value部分包括:对应sstable文件描述符指针和sstable文件对应的table结构体指针;Table结构体中包含了sstable的index内容、block cache用的cache_id及其他内容。有了table Cache之后，当客户端要访问某个key的值时，只要确定了该key所在的level及sstable文件就可以使用table cache快速定位其所在的block，如果命中缓存就可以减少一次访问磁盘sstable索引信息IO操作，如果对应的block也在block cache就减少了访问具体block的磁盘IO操作。如果没有命中就需要访问磁盘获取sstable索引信息，和block内容，并添加到换成中。
+
+* Block Cache
+Block Cache是对sstable中block内容的缓存,使在访问key的具体内容时不必再访问磁盘.
+![leveldb block cache](pictures/leveldb_block_cache.png#pic_center "Block Cache")
+如上图,block cache也是通过kv对的方式组织缓存,其中key是文件的cache_id和block在sstable中的偏移位置的组合,value是具体Block块内容.由此可见如果要访问的key所在的block在block cache中就可以从缓存中直接读取,减少磁盘的访问.
+
+LevelDB的缓存从sstable文件到sstable中的block,对于局部性读操作起到很好的效果,因为命中换成的概率加大,对于随机读取就欠佳了.
+
+## Version VersionEdit VersionSet
+
+* Version表示当前磁盘即内存中所有的文件信息,一般只有一个Version叫做Current version.LevelDB保存了很多version.当一次compaction结束之后就会更新新建一个version来表示当前所有文件的状态,并作为current table.如果用户创建Iterator就会引用到current version,如果Iterator不在是current version,但是Iterator依然引用该版本那么该版本一直存在,直到不被引用.
+* VersionSet 是所有Version的集合,管理所有存活的Version.
+* VersionEdit 是Version之间的变化部分,即记录了版本切换时添加了多少文件,删除到了多少文件,该信息持久化在manifest文件中.当做数据恢复时会用到该manifest文件,来重建数据.
