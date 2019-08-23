@@ -14,7 +14,7 @@
 10. sstable中的记录是根据key值有序存储的，并且level0中，两个sstable文件有可能存在重复的key(level0中的sstable文件直接导出的)，其他层不会出现重叠现象(是将所有涉及的两层sstable文件一起major compaction,所以其他层的sstable文件之间不存在重复的key)
 11. manifest文件管理所有的sstable文件信息，维护不同sstable文件所在层级，及该文件中key的最大最小值信息；
 12. current文件是用来指向manifest文件的，其内容就是manifest文件名，因为leveldb中的sstable文件是不断变化的，manifest文件也会跟着变化，所有current文件就是告诉我们那个manifest文件是当前可信的；
-![LevelDB structure](pictures/leveltable_structure.png#pic_center "leveldb structure")
+![LevelDB structure](pictures/leveldb_sstable_structure.png#pic_center "leveldb structure")
 ![manifest](pictures/manifest.png#pic_center "manifest")
 
 ## LevelDB Log
