@@ -84,9 +84,10 @@ leveldb log是用来保证更新操作的安全,所有的更新操作都要先�
 * 其他就是填充数和魔数;
    **数据区, 如下图:**
 ![data context](pictures/data_context.png#pic_center "data block 数据的内容")
-   有上图可以看出data block中的数据部分,又可分为两大部分:
-      - KV有序记录;
-      - 重启点和重启点的个数;
+有上图可以看出data block中的数据部分,又可分为两大部分:
+
+* KV有序记录;
+* 重启点和重启点的个数;
 
 >> LevelDB中对Key有序存储,为了节省存储空间,起始的key值完全记录,后面的就只使用差异部分标示即可,当不能再使用这种方式时就再使用完全的key值记录,这个记录点就是重启点,即重新使用完全Key值记录的点;
 
@@ -97,9 +98,9 @@ leveldb log是用来保证更新操作的安全,所有的更新操作都要先�
 
 * key的共享长度,即与前面的重启点key重叠的长度;
 * key的非共享长度, 即非重叠部分Key的长度;
-      - value长度, 即value值的大小;
-      - Key非共享内容, 即非共享部分Key的值;
-      - value值, 即实际的value内容;
+  * value长度, 即value值的大小;
+  * Key非共享内容, 即非共享部分Key的值;
+  * value值, 即实际的value内容;
 
 ## MemTable
 
