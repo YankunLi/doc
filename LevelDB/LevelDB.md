@@ -55,6 +55,7 @@ leveldb log是用来保证更新操作的安全,所有的更新操作都要先�
 #### SSTable中数据内容的逻辑布局`:`
 
 数据内容的逻辑布局都是在文件逻辑划分的基础上建立的.其内部数据组织结构如下:
+
 ![leveldb sstable content logical layout](pictures/leveldb_sstable_content_logical_layout.png#pic_center "leveldb sstable context logical layout")
 
 1. SSTable中的内容大体可以分两部分:
@@ -71,7 +72,8 @@ leveldb log是用来保证更新操作的安全,所有的更新操作都要先�
    > 注: LevelDB1.2中尚未使用元数据,和元数据索引;
 
 * 数据索引和Footer结构:  
-   **数据索引,如下图:**
+   **数据索引,如下图:**  
+
 ![data index](pictures/data_index.jpg#pic_center "数据索引")
 数据索引区的每条记录是对data block建立的索引信息,每条索引信息包含3部分内容:
 
@@ -79,21 +81,24 @@ leveldb log是用来保证更新操作的安全,所有的更新操作都要先�
    2. 第二个字段记录该data block在sstable文件中的偏移位置;
    3. 第三个字段记录该data block的大小(有时候数据是被压缩的)为什么;  
    **Footer,如下图:**  
+
 ![sstable footer](pictures/sstable_footer.png#pic_center "sstable 尾部结构")
 
 * Metaindex_handle记录metaindex block的起始位置和大小;
 * index_handle记录index block的起始位置和大小;
-* 其他就是填充数和魔数;
+* 其他就是填充数和魔数;  
    **数据区, 如下图:**
+
 ![data context](pictures/data_context.png#pic_center "data block 数据的内容")
+
 有上图可以看出data block中的数据部分,又可分为两大部分:
 
 * KV有序记录;
 * 重启点和重启点的个数;
 
->> LevelDB中对Key有序存储,为了节省存储空间,起始的key值完全记录,后面的就只使用差异部分标示即可,当不能再使用这种方式时就再使用完全的key值记录,这个记录点就是重启点,即重新使用完全Key值记录的点;
+>> LevelDB中对Key有序存储,为了节省存储空间,起始的key值完全记录,后面的就只使用差异部分标示即可,当不能再使用这种方式时就再使用完全的key值记录,这个记录点就是重启点,即重新使用完全Key值记录的点;  
 
-   **记录格式,如图**
+**记录格式,如图**  
 ![record format](pictures/record_format.png#pic_center "record format")
 
 记录根据内容可以分成5部分:
