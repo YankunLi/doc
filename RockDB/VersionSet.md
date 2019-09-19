@@ -11,6 +11,8 @@ Version VersionSet ColumnFamilyData
 * VersionSet::AppendVersion(ColumnFamilyData* column_family_data,Version* v)
 将Version v插入到ColumnFamilyData维护的Version链表的表头,并将ColumnFamilyData::current_指向该version v,老的 current_ version引用计数减一,新的current_ version加一;
 
+* Status VersionSet::LogAndApply(const std::vector<ColumnFamilyData*>& column_family_datas,const std::vector<MutableCFOptions>& mutable_cf_options_list, std::vector<autovector<VersionEdit*>>& edit_lists,InstrumentedMutex* mu, Directory* db_directory, bool new_descriptor_log,const ColumnFamilyOptions* new_cf_options)
+
 ### Version
 
 * Version::Ref()
