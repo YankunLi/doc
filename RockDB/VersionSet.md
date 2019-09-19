@@ -14,6 +14,8 @@ Version VersionSet ColumnFamilyData
 * Status VersionSet::LogAndApply(const std::vector<ColumnFamilyData*>& column_family_datas,const std::vector\<MutableCFOptions\>& mutable_cf_options_list, std::vector<autovector<VersionEdit*>>& edit_lists,InstrumentedMutex* mu, Directory* db_directory, bool new_descriptor_log,const ColumnFamilyOptions* new_cf_options)
 先做传入的参数合法性检查,将ColumnFamilyData和VersionEdit集合,一组ManifestWriter对象,再调用ProcessManifestWrites处理ManifestWriter集合;
 
+*void VersionSet::LogAndApplyHelper(ColumnFamilyData* cfd,VersionBuilder* builder, Version* /*v*/,VersionEdit* edit, InstrumentedMutex* mu)
+将
 ### Version
 
 * Version::Ref()
