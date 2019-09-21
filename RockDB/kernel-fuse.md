@@ -235,6 +235,10 @@ out:
 }
 ````
 
+generic_file_aio_read函数执行文件内容读取工作,根据文件描述符创建时如果带O_DIRECT标志,则将内存中的脏也写回磁盘,再通过address_space的操作对象中的direct_IO函数指针指向的函数执行读取操作(即直接从文件中读取数据),如果不带O_DIRECT标志,则使用do_generic_file_read函数继续读取数据.
+
+generic_file_aio_read该函数是所有文件系统read操作的通用函数,通过该函数可以使用pagecache特性功能;
+
 ```c
 /**
  * filemap_write_and_wait_range - write out & wait on a file range
@@ -269,8 +273,6 @@ int filemap_write_and_wait_range(struct address_space *mapping,
 ```
 
 将lstart到lend范围的脏页,写回磁盘,直到写入成功才返回.
-
-generic_file_aio_read该函数是所有文件系统read操作的通用函数,通过该函数可以使用pagecache特性功能;
 
 ```c
 /**
@@ -312,9 +314,11 @@ static void do_generic_file_read(struct file *filp, loff_t *ppos,
                 unsigned long nr, ret;
 
                 cond_resched();
-find_page:
+find_page:      
+//在文件的radix树中查找要读取的page
                 page = find_get_page(mapping, index);
                 if (!page) {
+//page为null,说明要读取的页不在radix树中(不在pagecache中),这时进行同步预读操作, 然后再从pagecache中读取页,此时一般都可以命中;
                         page_cache_sync_readahead(mapping,
                                         ra, filp,
                                         index, last_index - index);
@@ -322,12 +326,16 @@ find_page:
                         if (unlikely(page == NULL))
                                 goto no_cached_page;
                 }
+
                 if (PageReadahead(page)) {
+//从radix树(pagecache)中命中页,且是预读页,则再做异步预读操作,这里是对后面继续读取的猜测,做的加速优化;
                         page_cache_async_readahead(mapping,
                                         ra, filp, page,
                                         index, last_index - index);
                 }
+
                 if (!PageUptodate(page)) {
+//在radix中找到了要读取的页,但是该页中没有填充磁盘中的数据,即只分配了空间,但是没有数据,所以需要跳到读取数据逻辑段读取数据;
                         if (inode->i_blkbits == PAGE_CACHE_SHIFT ||
                                         !mapping->a_ops->is_partially_uptodate)
                                 goto page_not_up_to_date;
@@ -339,6 +347,7 @@ find_page:
                         unlock_page(page);
                 }
 page_ok:
+//page_ok段的代码是表示读取到页的内容了,将该页的内容copy到用户空间;,其主要逻辑是参数合法性检查,数据拷贝;
                 /*
                  * i_size must be checked after we know the page is Uptodate.
                  *
@@ -347,14 +356,14 @@ page_ok:
                  * part of the page is not copied back to userspace (unless
                  * another truncate extends the file - this is desired though).
                  */
-
+//合法性检查,是不是长度为0,或者超出文件范围;
                 isize = i_size_read(inode);
                 end_index = (isize - 1) >> PAGE_CACHE_SHIFT;
                 if (unlikely(!isize || index > end_index)) {
                         page_cache_release(page);
                         goto out;
                 }
-
+//合法性检查
                 /* nr is the maximum number of bytes to copy from this page */
                 nr = PAGE_CACHE_SIZE;
                 if (index == end_index) {
@@ -391,6 +400,7 @@ page_ok:
                  * "pos" here (the actor routine has to update the user buffer
                  * pointers and the remaining count).
                  */
+//将读取到的页中数据,由内核空间拷贝到用户空间;
                 ret = actor(desc, page, offset, nr);
                 offset += ret;
                 index += offset >> PAGE_CACHE_SHIFT;
@@ -404,12 +414,14 @@ page_ok:
 
 page_not_up_to_date:
                 /* Get exclusive access to the page ... */
+//读取第一个page之前要先对该页加锁;
                 error = lock_page_killable(page);
                 if (unlikely(error))
                         goto readpage_error;
 
 page_not_up_to_date_locked:
                 /* Did it get truncated before we got the lock? */
+//获取page lock之后发现该page的映射被取消了,可能是在获取锁的过程中被释放了,所以需要从新获取page;
                 if (!page->mapping) {
                         unlock_page(page);
                         page_cache_release(page);
@@ -417,6 +429,7 @@ page_not_up_to_date_locked:
                 }
 
                 /* Did somebody else fill it already? */
+//获取page lock之后,发现page中的数据已经填充,就不需要再读取文件了;
                 if (PageUptodate(page)) {
                         unlock_page(page);
                         goto page_ok;
@@ -424,6 +437,7 @@ page_not_up_to_date_locked:
 
 readpage:
                 /* Start the actual read. The read will unlock the page. */
+//开始实际文件数据读取;
                 error = mapping->a_ops->readpage(filp, page);
 
                 if (unlikely(error)) {
@@ -435,6 +449,7 @@ readpage:
                 }
 
                 if (!PageUptodate(page)) {
+//lock page等待数据返回,可能会休眠;
                         error = lock_page_killable(page);
                         if (unlikely(error))
                                 goto readpage_error;
@@ -454,7 +469,7 @@ readpage:
                         }
                         unlock_page(page);
                 }
-
+//数据读取完成;
                 goto page_ok;
 
 readpage_error:
@@ -468,6 +483,7 @@ no_cached_page:
                  * Ok, it wasn't cached, so we need to create a new
                  * page..
                  */
+//pagecache, 文件的radix树中,没有对应的page页,需要分配页,然后再读取数据,填充该page;
                 page = page_cache_alloc_cold(mapping);
                 if (!page) {
                         desc->error = -ENOMEM;
@@ -494,6 +510,11 @@ out:
         file_accessed(filp);
 
 ```
+
+do_generic_file_read从pagecache读取要读取数据所在的页:
+    如果该页已经存在,但是没有数据,则获取该页,读取文件数据填充该页,并拷贝到用户态(调用者提供的用户空间缓存);
+    如果该页存在且有数据,这直接拷贝到用户态(调用者提供的用户空间缓存);
+    如果该页不在pagecache中,则申请page页,加入文件的radix树中,然后读取文件内容,填充该页,并将该页数据拷贝的用户态(调用者提供的用户空间缓存)
 
 ```c
 /**
@@ -538,3 +559,82 @@ repeat:
 ```
 
 find_get_page从address_space中查找返回指定索引也的引用
+
+```c
+/**
+ * page_cache_sync_readahead - generic file readahead
+ * @mapping: address_space which holds the pagecache and I/O vectors
+ * @ra: file_ra_state which holds the readahead state
+ * @filp: passed on to ->readpage() and ->readpages()
+ * @offset: start offset into @mapping, in pagecache page-sized units
+ * @req_size: hint: total size of the read which the caller is performing in
+ *            pagecache pages
+ *
+ * page_cache_sync_readahead() should be called when a cache miss happened:
+ * it will submit the read.  The readahead logic may decide to piggyback more
+ * pages onto the read request if access patterns suggest it will improve
+ * performance.
+ */
+void page_cache_sync_readahead(struct address_space *mapping,
+                               struct file_ra_state *ra, struct file *filp,
+                               pgoff_t offset, unsigned long req_size)
+{
+        /* no read-ahead */
+        if (!ra->ra_pages)
+                return;
+
+        /* do read-ahead */
+        ondemand_readahead(mapping, ra, filp, false, offset, req_size);
+}
+```
+
+当要读取的页在pagecache中,会执行页同步预读,page_cache_sync_readahead通用的文件同步预读实现,offset 表示要读取数据所在的起始页, req_size涉及的页数,其具体实现由ondemand_readahead完成.
+
+```c
+/**
+ * page_cache_async_readahead - file readahead for marked pages
+ * @mapping: address_space which holds the pagecache and I/O vectors
+ * @ra: file_ra_state which holds the readahead state
+ * @filp: passed on to ->readpage() and ->readpages()
+ * @page: the page at @offset which has the PG_readahead flag set
+ * @offset: start offset into @mapping, in pagecache page-sized units
+ * @req_size: hint: total size of the read which the caller is performing in
+ *            pagecache pages
+ *
+ * page_cache_async_ondemand() should be called when a page is used which
+ * has the PG_readahead flag; this is a marker to suggest that the application
+ * has used up enough of the readahead window that we should start pulling in
+ * more pages.
+ */
+void
+page_cache_async_readahead(struct address_space *mapping,
+                           struct file_ra_state *ra, struct file *filp,
+                           struct page *page, pgoff_t offset,
+                           unsigned long req_size)
+{
+        /* no read-ahead */
+        if (!ra->ra_pages)
+                return;
+
+        /*
+         * Same bit is used for PG_readahead and PG_reclaim.
+         */
+        if (PageWriteback(page))
+                return;
+
+        ClearPageReadahead(page);
+
+        /*
+         * Defer asynchronous read-ahead on IO congestion.
+         */
+        if (bdi_read_congested(mapping->backing_dev_info))
+                return;
+
+        /* do read-ahead */
+        ondemand_readahead(mapping, ra, filp, true, offset, req_size);
+}
+```
+
+当要读取的页在pagecache中,会执行页同步预读,page_cache_sync_readahead通用的文件同步预读实现,offset 表示要读取数据所在的起始页, req_size涉及的页数,其具体实现由ondemand_readahead完成.
+
+## PageCache ReadAhead
