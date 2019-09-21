@@ -235,6 +235,41 @@ out:
 }
 ````
 
+```c
+/**
+ * filemap_write_and_wait_range - write out & wait on a file range
+ * @mapping:    the address_space for the pages
+ * @lstart:     offset in bytes where the range starts
+ * @lend:       offset in bytes where the range ends (inclusive)
+ *
+ * Write out and wait upon file offsets lstart->lend, inclusive.
+ *
+ * Note that `lend' is inclusive (describes the last byte to be written) so
+ * that this function can be used to write to the very end-of-file (end = -1).
+ */
+int filemap_write_and_wait_range(struct address_space *mapping,
+                                 loff_t lstart, loff_t lend)
+{
+        int err = 0;
+
+        if (mapping->nrpages) {
+                err = __filemap_fdatawrite_range(mapping, lstart, lend,
+                                                 WB_SYNC_ALL);
+                /* See comment of filemap_write_and_wait() */
+                if (err != -EIO) {
+                        int err2 = wait_on_page_writeback_range(mapping,
+                                                lstart >> PAGE_CACHE_SHIFT,
+                                                lend >> PAGE_CACHE_SHIFT);
+                        if (!err)
+                                err = err2;
+                }
+        }
+        return err;
+}
+```
+
+将lstart到lend范围的脏页,写回磁盘,直到写入成功才返回.
+
 generic_file_aio_read该函数是所有文件系统read操作的通用函数,通过该函数可以使用pagecache特性功能;
 
 ```c
@@ -459,3 +494,47 @@ out:
         file_accessed(filp);
 
 ```
+
+```c
+/**
+ * find_get_page - find and get a page reference
+ * @mapping: the address_space to search
+ * @offset: the page index
+ *
+ * Is there a pagecache struct page at the given (mapping, offset) tuple?
+ * If yes, increment its refcount and return it; if no, return NULL.
+ */
+struct page *find_get_page(struct address_space *mapping, pgoff_t offset)
+{
+        void **pagep;
+        struct page *page;
+
+        rcu_read_lock();
+repeat:
+        page = NULL;
+        pagep = radix_tree_lookup_slot(&mapping->page_tree, offset);
+        if (pagep) {
+                page = radix_tree_deref_slot(pagep);
+                if (unlikely(!page || page == RADIX_TREE_RETRY))
+                        goto repeat;
+
+                if (!page_cache_get_speculative(page))
+                        goto repeat;
+
+                /*
+                 * Has the page moved?
+                 * This is part of the lockless pagecache protocol. See
+                 * include/linux/pagemap.h for details.
+                 */
+                if (unlikely(page != *pagep)) {
+                        page_cache_release(page);
+                        goto repeat;
+                }
+        }
+        rcu_read_unlock();
+
+        return page;
+
+```
+
+find_get_page从address_space中查找返回指定索引也的引用
