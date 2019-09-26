@@ -25,7 +25,7 @@ Version::UnRef()
 
 ### BaseReferencedVersionBuilder
 
-BaseReferencedVersionBuilder封装了VersionBuilder类型,并引用了Version类型;
+BaseReferencedVersionBuilder封装了VersionBuilder类型,并引用了Version类型,主要用于构建新的version;
 
 ```c++
 // A wrapper of version builder which references the current version in
@@ -62,12 +62,21 @@ VersionBuilder的所有功能的所有具体实现都是由VersionBuilder::Rep�
 将VersionEdit版本间的差异,应用到VersionBuilder(Rep)中维护的当前状态中;
 
 * void SaveTo(VersionStorageInfo* vstorage)
-将VersionBuilder::Rep中维护的当前状态,和上一个版本的Version一同合并到新的Version中.
+将VersionBuilder::Rep中维护的当前状态,和上一个版本的Version一同合并新的Version(VersionStoreageInfo)中.
 
 ### VersionEdit
 
 VersionEdit记录着两个版本间的差异(被删除或者被新添加的文件),在上一个版本的基础上应用VersionEdit就可以得到一个新的Version.
+其中主要的两个属性:
+    - deleted_files_(DeletedFileSet)                           //被删除的文件列表
+    - new_files_(std::vector<std::pair<int, FileMetaData>>)    //新添加的文件列表
 
 ### FileMetaData
 
 ### VersionStorageInfo
+
+### LevelStat
+
+LevelStat内存中的对象,描述rocksdb中每一层删除和增加的文件.
+    - std::unordered_set<uint64_t> deleted_files; //某层删除的文件
+    - std::unordered_map<uint64_t, FileMetaData*> added_files; //某层新增的文件
