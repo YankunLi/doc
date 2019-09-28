@@ -62,7 +62,13 @@ VersionBuilder的所有功能的所有具体实现都是由VersionBuilder::Rep�
 将VersionEdit版本间的差异,应用到VersionBuilder(Rep)中维护的当前状态中;
 
 * void SaveTo(VersionStorageInfo* vstorage)
-将VersionBuilder::Rep中维护的当前状态,和上一个版本的Version一同合并新的Version(VersionStoreageInfo)中.
+将VersionBuilder::Rep中维护的当前状态,和上一个版本的Version一同合并(保存到)新的Version(VersionStoreageInfo)中.
+
+* void MaybeAddFile(VersionStorageInfo* vstorage, int level, FileMetaData* f)
+根据VersionBuilder::Rep中维护的状态,来处理level层的文件f,如果文件f是在被删除的集合中,就将vstorage中的该文件删除,如果该文件f在新增集合中;
+
+* void UnrefFile(FileMetaData* f)
+减少文件对象f的引用计数,如果其引用计数小于等于0,就删除其内存对象;
 
 ### VersionEdit
 
