@@ -75,7 +75,7 @@ out:
 
 ## __d_path
 
-__d_path根据提供的path和root,递归的找出并拼接出,path中的dentry对应的完整绝对路径;
+__d_path根据提供的path和root,递归的找出并拼接出,path中的dentry对应的完整绝对路径,并保存到buffer中;
 
 ```c
 /**
