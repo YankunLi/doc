@@ -8,6 +8,8 @@ Version VersionSet ColumnFamilyData
 
 ### VersionSet
 
+VersionSet中包含ColumnFamilyData的集合(ColumnFamilySet),每个ColumnFamilyData中有自己的Version.
+
 * VersionSet::AppendVersion(ColumnFamilyData* column_family_data,Version* v)
 将Version v插入到ColumnFamilyData维护的Version链表的表头,并将ColumnFamilyData::current_指向该version v,老的 current_ version引用计数减一,新的current_ version加一;
 
