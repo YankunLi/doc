@@ -221,3 +221,6 @@ struct dentry {
         unsigned char d_iname[DNAME_INLINE_LEN_MIN];    /* small names */
 };
 ```
+
+内核中dentry缓存的管理有:一个hash表,一个lru队列:
+
