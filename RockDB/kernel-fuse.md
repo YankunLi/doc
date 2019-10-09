@@ -314,7 +314,7 @@ static void do_generic_file_read(struct file *filp, loff_t *ppos,
                 unsigned long nr, ret;
 
                 cond_resched();
-find_page:      
+find_page:
 //在文件的radix树中查找要读取的page
                 page = find_get_page(mapping, index);
                 if (!page) {
