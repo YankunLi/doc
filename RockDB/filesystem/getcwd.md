@@ -213,7 +213,7 @@ struct dentry {
         } d_u;
         struct list_head d_subdirs;     /* our children */
         struct list_head d_alias;       /* inode alias list */
-        unsigned long d_time;           /* used by d_revalidate */
+        unsigned long d_time;           /* used by d_revalidate */    //设置dentry的过期时间
         const struct dentry_operations *d_op;
         struct super_block *d_sb;       /* The root of the dentry tree */
         void *d_fsdata;                 /* fs-specific data */
@@ -222,5 +222,7 @@ struct dentry {
 };
 ```
 
-内核中dentry缓存的管理有:一个hash表,一个lru队列:
+## Dentry缓存
+
+dentry缓存上次访问结果,减少对磁盘的访问,加速系统性能;内核中dentry缓存的管理有:一个hash表,一个lru队列:
 

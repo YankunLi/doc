@@ -8,16 +8,34 @@ Version VersionSet ColumnFamilyData
 
 ### VersionSet
 
-VersionSet中包含ColumnFamilyData的集合(ColumnFamilySet),每个ColumnFamilyData中有自己的Version.
+VersionSet中包含ColumnFamilyData的集合(ColumnFamilySet),每个ColumnFamilyData中有自己的Version集合,每个version中又维护了每一层的文件描述对象.
 
 * VersionSet::AppendVersion(ColumnFamilyData* column_family_data,Version* v)
-将Version v插入到ColumnFamilyData维护的Version链表的表头,并将ColumnFamilyData::current_指向该version v,老的 current_ version引用计数减一,新的current_ version加一;
+将Version v插入到ColumnFamilyData维护的Version环形双向链表的表头,并将ColumnFamilyData::current_指向该version v,老的 current_ version引用计数减一,新的current_ version加一,即更新ColumnFamilyData中当前version;
 
 * Status VersionSet::LogAndApply(const std::vector<ColumnFamilyData*>& column_family_datas,const std::vector\<MutableCFOptions\>& mutable_cf_options_list, std::vector<autovector<VersionEdit*>>& edit_lists,InstrumentedMutex* mu, Directory* db_directory, bool new_descriptor_log,const ColumnFamilyOptions* new_cf_options)
 先做传入的参数合法性检查,将ColumnFamilyData和VersionEdit集合,一组ManifestWriter对象,再调用ProcessManifestWrites处理ManifestWriter集合;
 
-*void VersionSet::LogAndApplyHelper(ColumnFamilyData* cfd,VersionBuilder* builder, Version* /*v*/,VersionEdit* edit, InstrumentedMutex* mu)
+* void VersionSet::LogAndApplyHelper(ColumnFamilyData* cfd,VersionBuilder* builder, Version* /*v*/,VersionEdit* edit, InstrumentedMutex* mu)
 将
+
+* ColumnFamilyData* VersionSet::CreateColumnFamily(const ColumnFamilyOptions& cf_options, VersionEdit* edit)
+创建新的ColumnFamilyData,并创建一个Version保存到被创建的ColumnFamilyData中.
+
+* void VersionSet::AddLiveFiles(std::vector<FileDescriptor>* live_list)
+将VersionSet中的所有ColumnFamilyData中的所有version中的每一层文件描述对象,添加到live_list集合中.
+
+* Status VersionSet::GetMetadataForFile(uint64_t number, int* filelevel,FileMetaData** meta,ColumnFamilyData** cfd)
+遍历VersionSet中每个ColumnFamilyData的current version每一层,查找编号为number的文件,并获取该文件所在ColumnFamilyData,原信息FileMetaData和所在层级.
+
+* void VersionSet::GetLiveFilesMetaData(std::vector<LiveFileMetaData>* metadata)
+遍历VersionSet中的所有ColumnFamilyData的每个Current version每一层的所有文件,然后将文件的原信息保存封装在LiveFileMetaData对象中,并保存到metadata中返回.
+
+* void VersionSet::MarkFileNumberUsed(uint64_t number)
+将number中VersionSet中标记已经被使用,标记方法即使VersionSet::next_file_number_的数值比number大1.
+
+* void VersionSet::MarkMinLogNumberToKeep2PC(uint64_t number)
+经VersionSet::min_log_number_to_keep_2pc_更新为number.
 
 ### Version
 
