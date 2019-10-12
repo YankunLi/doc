@@ -37,6 +37,8 @@ VersionSet中包含ColumnFamilyData的集合(ColumnFamilySet),每个ColumnFamily
 * void VersionSet::MarkMinLogNumberToKeep2PC(uint64_t number)
 经VersionSet::min_log_number_to_keep_2pc_更新为number.
 
+
+
 ### Version
 
 * Version::Ref()
