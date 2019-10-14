@@ -37,7 +37,15 @@ VersionSet中包含ColumnFamilyData的集合(ColumnFamilySet),每个ColumnFamily
 * void VersionSet::MarkMinLogNumberToKeep2PC(uint64_t number)
 经VersionSet::min_log_number_to_keep_2pc_更新为number.
 
+* void VersionSet::GetObsoleteFiles(std::vector<ObsoleteFileInfo>* files, std::vector<std::string>* manifest_filenames,uint64_t min_pending_output)
+获取VersionSet中维护的废弃的文件且这些文件的编号小于min_pending_output,将这些废弃的文件信息保存到files中返回,同时页获取VersionSet中废弃的
+manifest文件信息.
 
+uint64_t VersionSet::GetNumLiveVersions(Version* dummy_versions)
+dummy_versions是version双向链表的表头,该函数统计该链中现存的version数量,并返回.
+
+* uint64_t VersionSet::GetTotalSstFilesSize(Version* dummy_versions)
+统计dummy_versions version链表中所有version的每个level中的每个文件大小之后,且文件不重复统计(即同一个文件只统计一次),并返回该version链中包含的文件大小总和.
 
 ### Version
 
