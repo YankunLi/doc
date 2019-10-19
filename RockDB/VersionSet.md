@@ -53,7 +53,6 @@ dummy_versions是version双向链表的表头,该函数统计该链中现存的v
 * void VersionSet::LogAndApplyCFHelper(VersionEdit* edit)
 为VersionEdit记录设置next_file_name_,如果该VersionEdit是删除Column Family(is_column_family_drop_为true) 需要将最大的ColumnFamily id赋值给max_column_family_; 更新VersionEdit中所属VersionSet的last_allocated_sequence_,last_published_sequence_,last_sequence_这三个属性相同;
 
-
 ### Version
 
 * Version::Ref()
