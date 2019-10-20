@@ -69,6 +69,9 @@ enumerate_bl_pos 段内的偏移位置.
 * void make_offset_key(uint64_t offset, std::string *key)
 将uint64_t offset转换成string key.
 
+* void BitmapFreelistManager::setup_merge_operator(KeyValueDB *db, string prefix)
+给BitmapFreelistManager使用的KV db实例设置merge操作算法的实现实例.
+
 ## XorMergeOperator
 
 XorMergeOperator继承了KeyValueDB::MergeOperator, 主要实现merge方法函数,实现具体的merge/merge_nonexistent算法(KV存储支持特性操作merge,并且具体的merge算法可以自定义),merge的自定义实现是将给的参数,按位做异或运算.
