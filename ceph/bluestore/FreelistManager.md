@@ -68,3 +68,16 @@ enumerate_bl_pos 段内的偏移位置.
 
 * void make_offset_key(uint64_t offset, std::string *key)
 将uint64_t offset转换成string key.
+
+## XorMergeOperator
+
+XorMergeOperator继承了KeyValueDB::MergeOperator, 主要实现merge方法函数,实现具体的merge/merge_nonexistent算法(KV存储支持特性操作merge,并且具体的merge算法可以自定义),merge的自定义实现是将给的参数,按位做异或运算.
+
+* void merge(const char *ldata, size_t llen,const char *rdata, size_t rlen,std::string *new_value)
+将ldata与rdata两个字符串按位做异或运算,结果保存到new_value中返回.
+
+* void merge_nonexistent(const char *rdata, size_t rlen, std::string *new_value)
+对不存在原始内容做merge操作,即直接返回新添加的内容即可.
+
+* const char *name()
+返回"bitwise_xor".用于rocksdb构造时使用的merge操作名字.
