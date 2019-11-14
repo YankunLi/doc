@@ -49,11 +49,42 @@ static int __init fuse_init(void)
 }
 ```
 
+创建内核对象fuse_kobj/connections_kobj;
+
+```c
+static struct kobject *fuse_kobj;
+static struct kobject *connections_kobj;
+
+static int fuse_sysfs_init(void)
+{
+        int err;
+
+        fuse_kobj = kobject_create_and_add("fuse", fs_kobj);
+        if (!fuse_kobj) {
+                err = -ENOMEM;
+                goto out_err;
+        }
+
+        connections_kobj = kobject_create_and_add("connections", fuse_kobj);
+        if (!connections_kobj) {
+                err = -ENOMEM;
+                goto out_fuse_unregister;
+        }
+
+        return 0;
+
+ out_fuse_unregister:
+        kobject_put(fuse_kobj);
+ out_err:
+        return err;
+}
+```
+
 卸载fuse模块
 
 ```c
 static void __exit fuse_exit(void)
-{       
+{
         printk(KERN_DEBUG "fuse exit\n");
   
         fuse_ctl_cleanup();
