@@ -31,7 +31,7 @@ SYSCALL_DEFINE5(mount, char __user *, dev_name, char __user *, dir_name,
         ret = copy_mount_options(data, &data_page);
         if (ret < 0)
                 goto out_data;
-
+        //执行具体文件系统挂着操作,kernel_dev挂载的设备, kernel_dir->name挂着的目录名, kernel_type挂载的文件系统类型,flags挂载时设置的配置项;
         ret = do_mount(kernel_dev, kernel_dir->name, kernel_type, flags,
                 (void *) data_page);
 
@@ -47,6 +47,9 @@ out_type:
 }
 
 ```
+
+do_mount首先对挂着操作提供的参数进行检查,然后根据挂着标志flags,设置mnt_flags,最后根据flags来决定调用不同的挂着操作:
+do_remount/do_loopback/do_change_type/do_move_mount/do_new_mount,do_new_mount是执行新的挂着操作;
 
 ```c
 /*
@@ -137,6 +140,11 @@ dput_out:
 
 ```
 
+根据挂着指定的文件系统类型,获取(file_systems)内核中该文件系统类型实例(file_system_type),然后调用vfs_kern_mount执行挂着操作,该函数返回一个按照文件系统的描述符实例;
+vfsmount:
+该结构代表一个文件统统的挂载点(一个挂载点只有一个),它包含了文件系统的挂载信息,隶属同一个文件系统的所有目录和文件都隶属同一个vfsmount;该结构与文件系统的顶层目录相对应,即挂载目录.
+do_add_mount将挂载的文件系统添加到挂载链表中.
+
 ```c
 /*
  * create a new mount for userspace and request it to be added into the
@@ -187,6 +195,8 @@ static int do_new_mount(struct path *path, const char *fstype, int flags,
 }
 ```
 
+分配mount实例对象,调用mount_fs函数执行文件系统的挂载操作,该函数返回挂载点的dentry实例对象;
+
 ```c
 struct vfsmount *
 vfs_kern_mount(struct file_system_type *type, int flags, const char *name, void *data)
@@ -213,7 +223,7 @@ vfs_kern_mount(struct file_system_type *type, int flags, const char *name, void 
         mnt->mnt.mnt_root = root;
         mnt->mnt.mnt_sb = root->d_sb;
         mnt->mnt_mountpoint = mnt->mnt.mnt_root;
-        mnt->mnt_parent = mnt;
+        mnt->mnt_parent = mnt
         br_write_lock(&vfsmount_lock);
         list_add_tail(&mnt->mnt_instance, &root->d_sb->s_mounts);
         br_write_unlock(&vfsmount_lock);
@@ -223,19 +233,21 @@ EXPORT_SYMBOL_GPL(vfs_kern_mount);
 
 ```
 
+执行文件系统自定义的mount操作完成最后的文件系统挂载操作.
+
 ```c
 struct dentry *
 mount_fs(struct file_system_type *type, int flags, const char *name, void *data)
 {
         struct dentry *root;
-        struct super_block *sb; 
+        struct super_block *sb;
         char *secdata = NULL;
         int error = -ENOMEM;
 
         if (data && !(type->fs_flags & FS_BINARY_MOUNTDATA)) {
                 secdata = alloc_secdata();
                 if (!secdata)
-                        goto out; 
+                        goto out;
 
                 error = security_sb_copy_data(data, secdata);
                 if (error)
@@ -246,7 +258,7 @@ mount_fs(struct file_system_type *type, int flags, const char *name, void *data)
         if (IS_ERR(root)) {
                 error = PTR_ERR(root);
                 goto out_free_secdata;
-        }   
+        }
         sb = root->d_sb;
         BUG_ON(!sb);
         WARN_ON(!sb->s_bdi);
@@ -257,7 +269,7 @@ mount_fs(struct file_system_type *type, int flags, const char *name, void *data)
         if (error)
                 goto out_sb;
 
-        /*   
+        /*
          * filesystems should never set s_maxbytes larger than MAX_LFS_FILESIZE
          * but s_maxbytes was an unsigned long long for many releases. Throw
          * this warning for a little while to try and catch filesystems that
