@@ -290,3 +290,233 @@ out:
         return ERR_PTR(error);
 }
 ```
+
+将挂载点, do_add_mount添加到命令空间挂载树上去;
+这里主要调用graft_tree()把vfsmnt结构加入到安装系统链表中，同时 graft_tree() 还要将新分配的 struct vfsmount 类型的变量加入到一个hash表中;
+
+```c
+/*
+ * add a mount into a namespace's mount tree
+ */
+static int do_add_mount(struct mount *newmnt, struct path *path, int mnt_flags)
+{
+        struct mountpoint *mp;
+        struct mount *parent;
+        int err;
+
+        mnt_flags &= ~(MNT_SHARED | MNT_WRITE_HOLD | MNT_INTERNAL);
+
+        mp = lock_mount(path);
+        if (IS_ERR(mp))
+                return PTR_ERR(mp);
+
+        parent = real_mount(path->mnt);
+        err = -EINVAL;
+        if (unlikely(!check_mnt(parent))) {
+                /* that's acceptable only for automounts done in private ns */
+                if (!(mnt_flags & MNT_SHRINKABLE))
+                        goto unlock;
+                /* ... and for those we'd better have mountpoint still alive */
+                if (!parent->mnt_ns)
+                        goto unlock;
+        }
+
+        /* Refuse the same filesystem on the same mount point */
+        err = -EBUSY;
+        if (path->mnt->mnt_sb == newmnt->mnt.mnt_sb &&
+            path->mnt->mnt_root == path->dentry)
+                goto unlock;
+
+        err = -EINVAL;
+        if (S_ISLNK(newmnt->mnt.mnt_root->d_inode->i_mode))
+                goto unlock;
+
+        newmnt->mnt.mnt_flags = mnt_flags;
+        err = graft_tree(newmnt, parent, mp); 
+
+unlock:
+        unlock_mount(mp);
+        return err; 
+}
+```
+
+这里主要调用attach_recursive_mnt;
+
+```c
+static int graft_tree(struct mount *mnt, struct mount *p, struct mountpoint *mp)
+{
+        if (mnt->mnt.mnt_sb->s_flags & MS_NOUSER)
+                return -EINVAL;
+
+        if (S_ISDIR(mp->m_dentry->d_inode->i_mode) !=
+              S_ISDIR(mnt->mnt.mnt_root->d_inode->i_mode))
+                return -ENOTDIR;
+
+        return attach_recursive_mnt(mnt, p, mp, NULL);
+}
+
+```
+
+
+
+```c
+/*
+ *  @source_mnt : mount tree to be attached
+ *  @nd         : place the mount tree @source_mnt is attached
+ *  @parent_nd  : if non-null, detach the source_mnt from its parent and
+ *                 store the parent mount and mountpoint dentry.
+ *                 (done when source_mnt is moved)
+ *
+ *  NOTE: in the table below explains the semantics when a source mount
+ *  of a given type is attached to a destination mount of a given type.
+ * ---------------------------------------------------------------------------
+ * |         BIND MOUNT OPERATION                                            |
+ * |**************************************************************************
+ * | source-->| shared        |       private  |       slave    | unbindable |
+ * | dest     |               |                |                |            |
+ * |   |      |               |                |                |            |
+ * |   v      |               |                |                |            |
+ * |**************************************************************************
+ * |  shared  | shared (++)   |     shared (+) |     shared(+++)|  invalid   |
+ * |          |               |                |                |            |
+ * |non-shared| shared (+)    |      private   |      slave (*) |  invalid   |
+ * ***************************************************************************
+ * A bind operation clones the source mount and mounts the clone on the
+ * destination mount.
+ *
+ * (++)  the cloned mount is propagated to all the mounts in the propagation
+ *       tree of the destination mount and the cloned mount is added to
+ *       the peer group of the source mount.
+ * (+)   the cloned mount is created under the destination mount and is marked
+ *       as shared. The cloned mount is added to the peer group of the source
+ *       mount.
+ * (+++) the mount is propagated to all the mounts in the propagation tree
+ *       of the destination mount and the cloned mount is made slave
+ *       of the same master as that of the source mount. The cloned mount
+ *       is marked as 'shared and slave'.
+ * (*)   the cloned mount is made a slave of the same master as that of the
+ *       source mount.
+ *
+ * ---------------------------------------------------------------------------
+ * |                    MOVE MOUNT OPERATION                                 |
+ * |**************************************************************************
+ * | source-->| shared        |       private  |       slave    | unbindable |
+ * | dest     |               |                |                |            |
+ * |   |      |               |                |                |            |
+ * |   v      |               |                |                |            |
+ * |**************************************************************************
+ * |  shared  | shared (+)    |     shared (+) |    shared(+++) |  invalid   |
+ * |          |               |                |                |            |
+ * |non-shared| shared (+*)   |      private   |    slave (*)   | unbindable |
+ * ***************************************************************************
+*
+ * (+)  the mount is moved to the destination. And is then propagated to
+ *      all the mounts in the propagation tree of the destination mount.
+ * (+*)  the mount is moved to the destination.
+ * (+++)  the mount is moved to the destination and is then propagated to
+ *      all the mounts belonging to the destination mount's propagation tree.
+ *      the mount is marked as 'shared and slave'.
+ * (*)  the mount continues to be a slave at the new location.
+ *
+ * if the source mount is a tree, the operations explained above is
+ * applied to each mount in the tree.
+ * Must be called without spinlocks held, since this function can sleep
+ * in allocations.
+ */
+static int attach_recursive_mnt(struct mount *source_mnt,
+                        struct mount *dest_mnt,
+                        struct mountpoint *dest_mp,
+                        struct path *parent_path)
+{
+        LIST_HEAD(tree_list);
+        struct mount *child, *p;
+        int err;
+
+        if (IS_MNT_SHARED(dest_mnt)) {
+                err = invent_group_ids(source_mnt, true);
+                if (err)
+                        goto out;
+        }
+        err = propagate_mnt(dest_mnt, dest_mp, source_mnt, &tree_list);
+        if (err)
+                goto out_cleanup_ids;
+
+        br_write_lock(&vfsmount_lock);
+
+        if (IS_MNT_SHARED(dest_mnt)) {
+                for (p = source_mnt; p; p = next_mnt(p, source_mnt))
+                        set_mnt_shared(p);
+        }
+        if (parent_path) {
+                detach_mnt(source_mnt, parent_path);
+                attach_mnt(source_mnt, dest_mnt, dest_mp);
+                touch_mnt_namespace(source_mnt->mnt_ns);
+        } else {
+                mnt_set_mountpoint(dest_mnt, dest_mp, source_mnt);
+                commit_tree(source_mnt);
+        }
+
+        list_for_each_entry_safe(child, p, &tree_list, mnt_hash) {
+                list_del_init(&child->mnt_hash);
+                commit_tree(child);
+        }
+        br_write_unlock(&vfsmount_lock);
+
+        return 0;
+
+ out_cleanup_ids:
+        if (IS_MNT_SHARED(dest_mnt))
+                cleanup_group_ids(source_mnt, NULL);
+ out:
+        return err;
+}
+
+```
+
+在文章的最后，如果找到的某个path是安装点就会找到其最近一次被安装文件系统的指针。当找到该指针后，便将 nd 中的 mnt 成员换成该安装区域块指针，同时将 nd 中的 dentry 成员换成安装区域块中的 dentry 指针;
+
+```c
+/*
+ * vfsmount lock must be held for write
+ */
+void mnt_set_mountpoint(struct mount *mnt,
+                        struct mountpoint *mp,
+                        struct mount *child_mnt)
+{
+        mp->m_count++;
+        mnt_add_count(mnt, 1);  /* essentially, that's mntget */
+        child_mnt->mnt_mountpoint = dget(mp->m_dentry);
+        child_mnt->mnt_parent = mnt;
+        child_mnt->mnt_mp = mp;
+}
+```
+
+这里会把它添加到一个全局的mount_hashtable,这里的插入点是通过hash(parent, mnt->mnt_mountpoint)，即挂载目录先前的vfsmount结构和dentry结构
+
+```c
+
+/*
+ * vfsmount lock must be held for write
+ */
+static void commit_tree(struct mount *mnt)
+{
+        struct mount *parent = mnt->mnt_parent;
+        struct mount *m;
+        LIST_HEAD(head);
+        struct mnt_namespace *n = parent->mnt_ns;
+
+        BUG_ON(parent == mnt);
+
+        list_add_tail(&head, &mnt->mnt_list);
+        list_for_each_entry(m, &head, mnt_list)
+                m->mnt_ns = n;
+
+        list_splice(&head, n->list.prev);
+
+        list_add_tail(&mnt->mnt_hash, mount_hashtable +
+                                hash(&parent->mnt, mnt->mnt_mountpoint));
+        list_add_tail(&mnt->mnt_child, &parent->mnt_mounts);
+        touch_mnt_namespace(n);
+}
+
+```
