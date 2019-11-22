@@ -105,7 +105,8 @@ service Node {
 
 Extentnal Components(Driver Registrar External Provisioner Exteernal Attacher)是实现存储out-tree关键.
 
-* **Driver Registrar** : 注册插件信息到k8s，需要请求 CSI 插件的 Identity 服务来获取插件信息;
+* **Driver Registrar** : 注册插件信息到k8s，需要请求 CSI 插件的 Identity 服务来获取插件信息; 
+ 注: 驱动注册服务服务建议使用**node-driver-registrar**(k8s release 1.13), cluster-driver-registrar和driver-registrar已经淘汰.
 * **External Provisioner** : 的生命周期管理Watch  APIServer 的 PVC 对象，PVC 被创建时，就会调用 CSI Controller 的 CreateVolume 方法，创建对应 PV;
 * **External Attacher** : Watch APIServer 的 VolumeAttachment 对象，就会调用 CSI Controller 服务的 ControllerPublish 方法，完成它所对应的 Volume 的 Attach 阶段
 
