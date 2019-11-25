@@ -1,6 +1,6 @@
 # CSI插件实现
 
-## 待实现组件:
+## 待实现组件
 
 CSI插件实现必须实现的3部分:  **Identity Service** **Controller Service** **Node Service**.
 
@@ -97,6 +97,8 @@ service Node {
 }
 ```
 
+### 为插件起RPCserver
+
 ## K8S与插件的交互架构图
 
 ---
@@ -116,12 +118,25 @@ k8s 用户操作管理wfs空间,需要wfs分配权限赋予k8s用户,实现权�
 
 ## 插件的部署 TODO
 
-##  TODO
-
-1. 提供wfs管理服务
-2. 权限打通(k8s)
-
 ## TODO
+
+1. CSI插件RPC服务及插件协议接口:
+
+2. 提供文件系统管理服务:
+   * 创建文件系统空间,即创建目录
+   * 删除文件系统空间,即删除目录
+   * 清除文件系统空间中的文件,即清空指定目录下的内容;
+   * 给文件系统空间产生有权限的key, 挂着该文件系统的用户才有该目录的权限
+
+3. 权限打通,k8s要持有共享文件系统的管理权限,可行使管理员的对共享共享文件系统管理权限:
+   * k8s需要有共享文件系统的创建/删除/清理/赋权限的权限.
+   * 插件所在的node上要持有能挂着共享文件系统的权限.
+
+4. 挂载客户端需要支持, fuse挂载时灵活指定参数选项:
+
+5. 需要支持quota
+
+## TODO2
 
 ### IdentityServer
 
@@ -143,16 +158,16 @@ func (ids *DefaultIdentityServer) GetPluginInfo(ctx context.Context, req *csi.Ge
 
     if ids.Driver.name == "" {
         return nil, status.Error(codes.Unavailable, "Driver name not configured")
-    }   
+    }
 
     if ids.Driver.version == "" {
         return nil, status.Error(codes.Unavailable, "Driver is missing version")
-    }   
+    }
 
     return &csi.GetPluginInfoResponse{
         Name:          ids.Driver.name,
         VendorVersion: ids.Driver.version,
-    }, nil 
+    }, nil
 }
 ```
 
@@ -161,7 +176,7 @@ func (ids *DefaultIdentityServer) GetPluginInfo(ctx context.Context, req *csi.Ge
 ```golang
 // Probe returns empty response
 func (ids *DefaultIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest) (*csi.ProbeResponse, error) {
-    return &csi.ProbeResponse{}, nil 
+    return &csi.ProbeResponse{}, nil
 }
 ```
 
@@ -173,7 +188,7 @@ func (ids *DefaultIdentityServer) GetPluginCapabilities(ctx context.Context, req
     klog.V(5).Infof(util.Log(ctx, "Using default capabilities"))
     return &csi.GetPluginCapabilitiesResponse{
         Capabilities: []*csi.PluginCapability{
-            {   
+            {
                 Type: &csi.PluginCapability_Service_{
                     Service: &csi.PluginCapability_Service{
                         Type: csi.PluginCapability_Service_CONTROLLER_SERVICE,
@@ -181,7 +196,7 @@ func (ids *DefaultIdentityServer) GetPluginCapabilities(ctx context.Context, req
                 },  
             },  
         },  
-    }, nil 
+    }, nil
 }
 
 ```
@@ -204,7 +219,7 @@ type DefaultControllerServer struct {
 ```golang
 // ControllerPublishVolume publish volume on node
 func (cs *DefaultControllerServer) ControllerPublishVolume(ctx context.Context, req *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
-    return nil, status.Error(codes.Unimplemented, "") 
+    return nil, status.Error(codes.Unimplemented, "")
 }
 ```
 
@@ -213,7 +228,7 @@ func (cs *DefaultControllerServer) ControllerPublishVolume(ctx context.Context, 
 ```golang
 // ControllerUnpublishVolume unpublish on node
 func (cs *DefaultControllerServer) ControllerUnpublishVolume(ctx context.Context, req *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
-    return nil, status.Error(codes.Unimplemented, "") 
+    return nil, status.Error(codes.Unimplemented, "")
 }
 ```
 
@@ -222,7 +237,7 @@ func (cs *DefaultControllerServer) ControllerUnpublishVolume(ctx context.Context
 ```golang
 // ControllerExpandVolume expand volume
 func (cs *DefaultControllerServer) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
-    return nil, status.Error(codes.Unimplemented, "") 
+    return nil, status.Error(codes.Unimplemented, "")
 }
 ```
 
@@ -231,7 +246,7 @@ func (cs *DefaultControllerServer) ControllerExpandVolume(ctx context.Context, r
 ```golang
 // ListVolumes lists volumes
 func (cs *DefaultControllerServer) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
-    return nil, status.Error(codes.Unimplemented, "") 
+    return nil, status.Error(codes.Unimplemented, "")
 }
 ```
 
@@ -240,7 +255,7 @@ func (cs *DefaultControllerServer) ListVolumes(ctx context.Context, req *csi.Lis
 ```golang
 // GetCapacity get volume capacity
 func (cs *DefaultControllerServer) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
-    return nil, status.Error(codes.Unimplemented, "") 
+    return nil, status.Error(codes.Unimplemented, "")
 }
 ```
 
@@ -254,7 +269,7 @@ func (cs *DefaultControllerServer) ControllerGetCapabilities(ctx context.Context
 
     return &csi.ControllerGetCapabilitiesResponse{
         Capabilities: cs.Driver.cap,
-    }, nil 
+    }, nil
 }
 
 ```
@@ -268,7 +283,7 @@ func (cs *DefaultControllerServer) ControllerGetCapabilities(ctx context.Context
 ```golang
 // CreateSnapshot creates snapshot
 func (cs *DefaultControllerServer) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) {
-    return nil, status.Error(codes.Unimplemented, "") 
+    return nil, status.Error(codes.Unimplemented, "")
 }
 ```
 
@@ -277,7 +292,7 @@ func (cs *DefaultControllerServer) CreateSnapshot(ctx context.Context, req *csi.
 ```golang
 // DeleteSnapshot deletes snapshot
 func (cs *DefaultControllerServer) DeleteSnapshot(ctx context.Context, req *csi.DeleteSnapshotRequest) (*csi.DeleteSnapshotResponse, error) {
-    return nil, status.Error(codes.Unimplemented, "") 
+    return nil, status.Error(codes.Unimplemented, "")
 }
 ```
 
