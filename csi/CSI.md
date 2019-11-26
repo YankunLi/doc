@@ -87,16 +87,16 @@ service Controller {
 
 ```golang
 service Node {
-    //在node节点上挂载该volume
+    //在node节点上挂载该volume,在controller NodePublishVolume成功之后被调用,在node NodePublishVolume之前被执行
   rpc NodeStageVolume (NodeStageVolumeRequest)
     returns (NodeStageVolumeResponse) {}
-    //卸载node上挂载的volume
+    //卸载node上挂载的volume,在controller NodeUnpublishVolume之前调用,在 node NodeUnpublishVolume之后被调用
   rpc NodeUnstageVolume (NodeUnstageVolumeRequest)
     returns (NodeUnstageVolumeResponse) {}
-    //
+    //在node节点上挂载volume,在NodeStageVolume之后被调用
   rpc NodePublishVolume (NodePublishVolumeRequest)
     returns (NodePublishVolumeResponse) {}
-
+    //在node节点上卸载volume,在NodeStageVolume之前被调用
   rpc NodeUnpublishVolume (NodeUnpublishVolumeRequest)
     returns (NodeUnpublishVolumeResponse) {}
     //获取node上volume 容量使用状态信息
