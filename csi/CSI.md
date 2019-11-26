@@ -34,16 +34,16 @@ service Controller {
     //删除存储资源,即释放存储空间
   rpc DeleteVolume (DeleteVolumeRequest)
     returns (DeleteVolumeResponse) {}
-
+    //发布一个volume,类似公布一个volume资源,并记录
   rpc ControllerPublishVolume (ControllerPublishVolumeRequest)
     returns (ControllerPublishVolumeResponse) {}
-
+    //回收一个volume,撤销volume资源的公布,删除该记录
   rpc ControllerUnpublishVolume (ControllerUnpublishVolumeRequest)
     returns (ControllerUnpublishVolumeResponse) {}
     //验证volume capability,即验证volume 信息是否合法
   rpc ValidateVolumeCapabilities (ValidateVolumeCapabilitiesRequest)
     returns (ValidateVolumeCapabilitiesResponse) {}
-
+    //列举volume实例
   rpc ListVolumes (ListVolumesRequest)
     returns (ListVolumesResponse) {}
 
