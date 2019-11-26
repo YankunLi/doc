@@ -1,5 +1,16 @@
 # CSI插件实现
 
+## CSI支持的版本信息
+
+    **Kubernetes CSI Spec Compatibility	Status**
+
+k8s version| CSI version| CSI release
+:-:|:-:|:-:
+v1.9|v0.1.0|Alpha
+v1.10|v0.2.0|Beta
+v1.11|v0.3.0|Beta
+v1.13|v0.3.0, v1.0.0|GA
+
 ## 待实现组件
 
 CSI插件实现必须实现的3部分:  **Identity Service** **Controller Service** **Node Service**.
@@ -7,6 +18,7 @@ CSI插件实现必须实现的3部分:  **Identity Service** **Controller Servic
 **Identity Service:** Both the Node Plugin and the Controller Plugin MUST implement this sets of RPCs.
 **Controller Service:** The Controller Plugin MUST implement this sets of RPCs.
 **Node Service:** The Node Plugin MUST implement this sets of RPCs.
+
 
 ### Identity Service
 
