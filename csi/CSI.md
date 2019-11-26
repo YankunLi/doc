@@ -40,7 +40,7 @@ service Controller {
 
   rpc ControllerUnpublishVolume (ControllerUnpublishVolumeRequest)
     returns (ControllerUnpublishVolumeResponse) {}
-
+    //验证volume capability,即验证volume 信息是否合法
   rpc ValidateVolumeCapabilities (ValidateVolumeCapabilitiesRequest)
     returns (ValidateVolumeCapabilitiesResponse) {}
 
