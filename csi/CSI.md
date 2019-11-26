@@ -52,13 +52,13 @@ service Controller {
     //获取ControllerService所提供的服务能力,即那些功能
   rpc ControllerGetCapabilities (ControllerGetCapabilitiesRequest)
     returns (ControllerGetCapabilitiesResponse) {}
-
+    //创建快照
   rpc CreateSnapshot (CreateSnapshotRequest)
     returns (CreateSnapshotResponse) {}
-
+    //删除快照
   rpc DeleteSnapshot (DeleteSnapshotRequest)
     returns (DeleteSnapshotResponse) {}
-
+    //列举快照
   rpc ListSnapshots (ListSnapshotsRequest)
     returns (ListSnapshotsResponse) {}
     //扩展volume的空间大小
