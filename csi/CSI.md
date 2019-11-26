@@ -12,12 +12,13 @@ CSI插件实现必须实现的3部分:  **Identity Service** **Controller Servic
 
 ```golang
 service Identity {
+    //获取plugin信息
   rpc GetPluginInfo(GetPluginInfoRequest)
     returns (GetPluginInfoResponse) {}
-
+   //获取plugin所能提供的服务
   rpc GetPluginCapabilities(GetPluginCapabilitiesRequest)
     returns (GetPluginCapabilitiesResponse) {}
-
+   //探测插件
   rpc Probe (ProbeRequest)
     returns (ProbeResponse) {}
 }
@@ -27,9 +28,10 @@ service Identity {
 
 ```golang
 service Controller {
+    //创建volume存储资源,即从总的存储空间中分配指定大小的存储空间
   rpc CreateVolume (CreateVolumeRequest)
     returns (CreateVolumeResponse) {}
-
+    //删除存储资源,即释放存储空间
   rpc DeleteVolume (DeleteVolumeRequest)
     returns (DeleteVolumeResponse) {}
 
@@ -47,7 +49,7 @@ service Controller {
 
   rpc GetCapacity (GetCapacityRequest)
     returns (GetCapacityResponse) {}
-
+    //获取ControllerService所提供的服务能力,即那些功能
   rpc ControllerGetCapabilities (ControllerGetCapabilitiesRequest)
     returns (ControllerGetCapabilitiesResponse) {}
 
@@ -59,7 +61,7 @@ service Controller {
 
   rpc ListSnapshots (ListSnapshotsRequest)
     returns (ListSnapshotsResponse) {}
-
+    //扩展volume的空间大小
   rpc ControllerExpandVolume (ControllerExpandVolumeRequest)
     returns (ControllerExpandVolumeResponse) {}
 }
