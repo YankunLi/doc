@@ -46,7 +46,7 @@ service Controller {
     //列举volume实例
   rpc ListVolumes (ListVolumesRequest)
     returns (ListVolumesResponse) {}
-
+    //获取存储空间的存储空间情况
   rpc GetCapacity (GetCapacityRequest)
     returns (GetCapacityResponse) {}
     //获取ControllerService所提供的服务能力,即那些功能
