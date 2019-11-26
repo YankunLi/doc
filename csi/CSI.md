@@ -114,9 +114,19 @@ service Node {
 }
 ```
 
-[**Link:** CSI Protocol](https://github.com/container-storage-interface/spec/blob/master/spec.md)
+### CSI RPCServer
 
-### 为插件起RPCserver
+* Identity RPCServer
+* Controller RPCServer
+* Node RPCServer
+
+## CSI Plugin Deployment
+
+* **Identify RPCServer** 和 **Controller RPCServer**可以部署在任意节点上,由k8s的支持CSI的外部组件通过RPC协议调用;
+
+* **Node RPCServer**的部署取决于volume的在哪里使用,即使用的volume的任何node上,都必须部署,kubelet通过unix socket与node RPCServer交互;
+
+[**Link:** CSI Protocol](https://github.com/container-storage-interface/spec/blob/master/spec.md)
 
 ## K8S与插件的交互架构图
 
