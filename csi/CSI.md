@@ -88,7 +88,7 @@ service Node {
 
   rpc NodeExpandVolume(NodeExpandVolumeRequest)
     returns (NodeExpandVolumeResponse) {}
-
+    //获取plugin node所提供的服务,即提供的功能
   rpc NodeGetCapabilities (NodeGetCapabilitiesRequest)
     returns (NodeGetCapabilitiesResponse) {}
 
