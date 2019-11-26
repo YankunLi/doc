@@ -149,12 +149,36 @@ Extentnal Components(Driver Registrar External Provisioner Exteernal Attacher)�
 ## TODO
 
 1. CSI插件RPC服务及插件协议接口:
+    * Identity Service:
+      * GetPluginInfo
+      * GetPluginCapabilities
+      * Probe
+    * Controller Service:
+      * CreateVolume
+      * DeleteVolume
+      * ControllerPublishVolume
+      * ControllerUnpublishVolume
+      * ValidateVolumeCapabilities
+      * ListVolumes
+      * GetCapacity
+      * ControllerGetCapabilities
+      * ControllerExpandVolume
+    * Node Service
+      * NodeStageVolume
+      * NodeUnstageVolume
+      * NodePublishVolume
+      * NodeUnpublishVolume
+      * NodeGetVolumeStats
+      * NodeExpandVolume
+      * NodeGetCapabilities
+      * NodeGetInfo
 
 2. 提供文件系统管理服务:
-   * 创建文件系统空间,即创建目录
-   * 删除文件系统空间,即删除目录
+   * 创建文件系统空间,即创建目录;
+   * 删除文件系统空间,即删除目录;
+   * 列举已分配的共享空间;
    * 清除文件系统空间中的文件,即清空指定目录下的内容;
-   * 给文件系统空间产生有权限的key, 挂着该文件系统的用户才有该目录的权限
+   * 给文件系统空间产生有权限的key, 挂着该文件系统的用户才有该目录的权限;
 
 3. 认证授权,k8s要持有共享文件系统的管理权限,可行使管理员的对共享共享文件系统管理权限:
    * k8s需要有共享文件系统的创建/删除/清理/赋权限的功能.
@@ -165,6 +189,8 @@ Extentnal Components(Driver Registrar External Provisioner Exteernal Attacher)�
 
 5. 需要支持quota
    * 资源创建时指定了带创建资源的大小;
+
+**注:** k8s需要能够持有共享存储的管理权限,及共享文件系统的使用权限.
 
 ## CSI Design
 
