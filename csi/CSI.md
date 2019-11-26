@@ -1,8 +1,10 @@
 # CSI插件实现
 
+
+
 ## CSI支持的版本信息
 
-    **Kubernetes CSI Spec Compatibility	Status**
+**Kubernetes CSI Spec Compatibility	Status**
 
 k8s version| CSI version| CSI release
 :-:|:-:|:-:
@@ -11,12 +13,14 @@ v1.10|v0.2.0|Beta
 v1.11|v0.3.0|Beta
 v1.13|v0.3.0, v1.0.0|GA
 
-## 待实现组件
+## CSI标准接口
 
 CSI插件实现必须实现的3部分:  **Identity Service** **Controller Service** **Node Service**.
 
 **Identity Service:** Both the Node Plugin and the Controller Plugin MUST implement this sets of RPCs.
+
 **Controller Service:** The Controller Plugin MUST implement this sets of RPCs.
+
 **Node Service:** The Node Plugin MUST implement this sets of RPCs.
 
 
@@ -83,31 +87,34 @@ service Controller {
 
 ```golang
 service Node {
+    //在node节点上挂载该volume
   rpc NodeStageVolume (NodeStageVolumeRequest)
     returns (NodeStageVolumeResponse) {}
-
+    //卸载node上挂载的volume
   rpc NodeUnstageVolume (NodeUnstageVolumeRequest)
     returns (NodeUnstageVolumeResponse) {}
-
+    //
   rpc NodePublishVolume (NodePublishVolumeRequest)
     returns (NodePublishVolumeResponse) {}
 
   rpc NodeUnpublishVolume (NodeUnpublishVolumeRequest)
     returns (NodeUnpublishVolumeResponse) {}
-
+    //获取node上volume 容量使用状态信息
   rpc NodeGetVolumeStats (NodeGetVolumeStatsRequest)
     returns (NodeGetVolumeStatsResponse) {}
-
+    //扩展node上的volume
   rpc NodeExpandVolume(NodeExpandVolumeRequest)
     returns (NodeExpandVolumeResponse) {}
     //获取plugin node所提供的服务,即提供的功能
   rpc NodeGetCapabilities (NodeGetCapabilitiesRequest)
     returns (NodeGetCapabilitiesResponse) {}
-
+    //获取node上volumes挂载的信息
   rpc NodeGetInfo (NodeGetInfoRequest)
     returns (NodeGetInfoResponse) {}
 }
 ```
+
+[**Link:** CSI Protocol](https://github.com/container-storage-interface/spec/blob/master/spec.md)
 
 ### 为插件起RPCserver
 
@@ -147,6 +154,14 @@ k8s 用户操作管理wfs空间,需要wfs分配权限赋予k8s用户,实现权�
 4. 挂载客户端需要支持, fuse挂载时灵活指定参数选项:
 
 5. 需要支持quota
+
+## CSI Design
+
+[CSI Desgine](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/storage/container-storage-interface.md)
+
+## CSI Documentation
+
+[CSI documentation](https://kubernetes-csi.github.io/docs/introduction.html)
 
 ## TODO2
 
