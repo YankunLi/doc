@@ -141,9 +141,11 @@ Extentnal Components(Driver Registrar External Provisioner Exteernal Attacher)�
 * **External Provisioner** : 的生命周期管理Watch  APIServer 的 PVC 对象，PVC 被创建时，就会调用 CSI Controller 的 CreateVolume 方法，创建对应 PV;
 * **External Attacher** : Watch APIServer 的 VolumeAttachment 对象，就会调用 CSI Controller 服务的 ControllerPublish 方法，完成它所对应的 Volume 的 Attach 阶段
 
-## 认证 TODO
+## 认证授权
 
-k8s 用户操作管理wfs空间,需要wfs分配权限赋予k8s用户,实现权限打通.
+1. 管理存储资源的权限,例如获取存储资源信息/创建volume/删除volume/清空volume等.
+
+2. 使用已分配的volume,挂载,卸载,数据读写等.
 
 ## 插件的部署 TODO
 
@@ -157,7 +159,7 @@ k8s 用户操作管理wfs空间,需要wfs分配权限赋予k8s用户,实现权�
    * 清除文件系统空间中的文件,即清空指定目录下的内容;
    * 给文件系统空间产生有权限的key, 挂着该文件系统的用户才有该目录的权限
 
-3. 权限打通,k8s要持有共享文件系统的管理权限,可行使管理员的对共享共享文件系统管理权限:
+3. 认证授权,k8s要持有共享文件系统的管理权限,可行使管理员的对共享共享文件系统管理权限:
    * k8s需要有共享文件系统的创建/删除/清理/赋权限的权限.
    * 插件所在的node上要持有能挂着共享文件系统的权限.
 
