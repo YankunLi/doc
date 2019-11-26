@@ -1,10 +1,8 @@
 # CSI插件实现
 
-
-
 ## CSI支持的版本信息
 
-**Kubernetes CSI Spec Compatibility	Status**
+### **Kubernetes CSI Spec Compatibility Status**
 
 k8s version| CSI version| CSI release
 :-:|:-:|:-:
@@ -15,14 +13,13 @@ v1.13|v0.3.0, v1.0.0|GA
 
 ## CSI标准接口
 
-CSI插件实现必须实现的3部分:  **Identity Service** **Controller Service** **Node Service**.
+### CSI插件实现必须实现的3部分:  **Identity Service** **Controller Service** **Node Service**.
 
 **Identity Service:** Both the Node Plugin and the Controller Plugin MUST implement this sets of RPCs.
 
 **Controller Service:** The Controller Plugin MUST implement this sets of RPCs.
 
 **Node Service:** The Node Plugin MUST implement this sets of RPCs.
-
 
 ### Identity Service
 
@@ -160,12 +157,14 @@ Extentnal Components(Driver Registrar External Provisioner Exteernal Attacher)�
    * 给文件系统空间产生有权限的key, 挂着该文件系统的用户才有该目录的权限
 
 3. 认证授权,k8s要持有共享文件系统的管理权限,可行使管理员的对共享共享文件系统管理权限:
-   * k8s需要有共享文件系统的创建/删除/清理/赋权限的权限.
-   * 插件所在的node上要持有能挂着共享文件系统的权限.
+   * k8s需要有共享文件系统的创建/删除/清理/赋权限的功能.
+   * 插件所在的node上要持有能挂着共享文件系统的权限(RO/RW).
 
 4. 挂载客户端需要支持, fuse挂载时灵活指定参数选项:
+   * 例如只读挂载(RO),该功能通过挂载共享目录时,传参灵活支持.
 
 5. 需要支持quota
+   * 资源创建时指定了带创建资源的大小;
 
 ## CSI Design
 
