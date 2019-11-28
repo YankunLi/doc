@@ -119,9 +119,11 @@ service Node {
 
 ## CSI Plugin Deployment
 
-* **Identify RPCServer** 和 **Controller RPCServer**可以部署在任意节点上,由k8s的支持CSI的外部组件通过RPC协议调用;
+* **Controller RPCServer**和**Node RPCServer** 都必须提供**Identify RPCServer**服务;
 
-* **Node RPCServer**的部署取决于volume的在哪里使用,即使用的volume的任何node上,都必须部署,kubelet通过unix socket与node RPCServer交互;
+* **Identify RPCServer** 和 **Controller RPCServer**可以部署在任意节点上,由k8s的支持CSI的外部组件基于Unix Socket 通过RPC协议调用;
+
+* **Identify RPCServer** 和 **Node RPCServer**的部署取决于volume的在哪里使用,即使用的volume的任何node上,都必须部署,kubelet基于Unix Socket 通过RPC协议与node RPCServer交互;
 
 [**Link:** CSI Protocol](https://github.com/container-storage-interface/spec/blob/master/spec.md)
 
@@ -199,6 +201,16 @@ Extentnal Components(Driver Registrar External Provisioner Exteernal Attacher)�
 ## CSI Documentation
 
 [CSI documentation](https://kubernetes-csi.github.io/docs/introduction.html)
+
+## External Components
+
+* external-attacher
+* external-provisioner
+* node-driver-registrar
+* cluster-driver-registrar
+* external-resizer
+* external-snapshotter
+* livenessprobe
 
 ## TODO2
 
