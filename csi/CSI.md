@@ -194,6 +194,10 @@ Extentnal Components(Driver Registrar External Provisioner Exteernal Attacher)�
 
 **注:** k8s需要能够持有共享存储的管理权限,及共享文件系统的使用权限.
 
+## CSI Protocol
+
+[CSI Desgine](https://github.com/container-storage-interface/spec/blob/master/spec.md)
+
 ## CSI Design
 
 [CSI Desgine](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/storage/container-storage-interface.md)
