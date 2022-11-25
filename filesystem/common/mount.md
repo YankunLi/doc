@@ -170,30 +170,55 @@ static int do_new_mount(struct path *path, const char *fstype, int sb_flags,
                 }
         }
 
-        fc = fs_context_for_mount(type, sb_flags); //其调用alloc_fs_context， 分配并初始化文件系统上下文,为后面的具体挂载操作服务。
+        fc = fs_context_for_mount(type, sb_flags); // 分配并设置本次挂载操作需要的vfs上下文(struct fs_context)实例和fuse上下文(struct fuse_fs_context)实例。
+        //由文件系统type获取fuse文件系统实例，调用其init_fs_context函数钩子(对应fuse_init_fs_context函数)，分配并初始化fuse文件系统的上下文。
+        //struct fs_context 属性fs_private 指向fuse的文件系统上下文变量, 属性ops(struct fs_context_operations) 指向fuse文件系统提供的操作函数变量。
         put_filesystem(type);
         if (IS_ERR(fc))
                 return PTR_ERR(fc);
 
         if (subtype)
                 err = vfs_parse_fs_string(fc, "subtype",
-                                          subtype, strlen(subtype)); //解析参数，赋值fc中相关变量
+                                          subtype, strlen(subtype)); //解析参数，赋值fc中相关变量。
+                //fs_context通过操作函数（ops）的 .parse_param,该函数指向fuse文件系统 fuse_parse_param, 解析参数，设置fuse上下文属性。
         if (!err && name)
                 err = vfs_parse_fs_string(fc, "source", name, strlen(name));
         if (!err)
-                err = parse_monolithic_mount_data(fc, data); //解析data中有格式的参数，然后再调用vfs_parse_fs_string赋值fc中相关变量。
+                err = parse_monolithic_mount_data(fc, data); //解析data中有格式的参数，然后再调用vfs_parse_fs_string,设置fc中相关变量。
         if (!err && !mount_capable(fc))
                 err = -EPERM;
         if (!err)
-                err = vfs_get_tree(fc); //会调用fuse中文件系统上下文处理函数(get_tree(fuse_get_tree)), 该函数继续调用get_tree_nodev，
-                //该函数会调用vfs_get_super，分配super_block,并通通过传入的回调函数fuse_fill_super，来填充改super_block变量。
-                //该函数中也初始化并实例化了fuse_conn fuse_mount, 挂载目录的inode，和dentry对象, fuse_conn会交给fusectl文件系统管理。
+                err = vfs_get_tree(fc); // 该函数会调用fs_context 操作对象ops的get_tree函数, 实际调用fuse_get_tree。
+                //该函数会调用vfs_get_super，分配super_block, 并调用fuse_fill_super，来设置super_block变量。同时创建根目录的dentry，inode。
+                //dentry的d_inode指向对应的inode。super_block的s_root指向dentry。
+                //该函数中也初始化并实例化了fuse_conn fuse_mount,super_block的s_fs_info指向fuse_mount, fuse_mount可以索引到fuse_conn。
+                //super_block的s_d_op被指向fuse_dentry_operations变量。fuse_conn会交给fusectl文件系统管理。
         if (!err)
                 err = do_new_mount_fc(fc, path, mnt_flags);
 
         put_fs_context(fc); //释放掉文件系统上下文。
         return err;
 }
+```
+fuse 文件系统类型常量实例
+```
+static struct file_system_type fuse_fs_type = {
+        .owner          = THIS_MODULE,
+        .name           = "fuse",
+        .fs_flags       = FS_HAS_SUBTYPE | FS_USERNS_MOUNT,
+        .init_fs_context = fuse_init_fs_context,// 用于分配并设置fuse 文件系统上下文(struct fuse_fs_context), 同时设置fs_context变量的ops( struct fs_context_operations)和fs_private(void *)该变量指向fuse文件系统上下文（struct fuse_fs_context);
+        .parameters     = fuse_fs_parameters,
+        .kill_sb        = fuse_kill_sb_anon,
+};
+```
+fuse 文件系统上下文变量操作函数变量。
+```
+static const struct fs_context_operations fuse_context_ops = {
+        .free           = fuse_free_fc,
+        .parse_param    = fuse_parse_param,
+        .reconfigure    = fuse_reconfigure,
+        .get_tree       = fuse_get_tree, //设置super_block, 创建更目录的dentry，inode，以及fuse中的相关变量fuse_conn, fuse_mount。
+};
 ```
 
 struct fuse_conn可供多个文件系统使用,其属性struct list_head mounts 维护一组使用该连接的文件系统。
