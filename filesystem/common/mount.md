@@ -224,3 +224,115 @@ static const struct fs_context_operations fuse_context_ops = {
 struct fuse_conn可供多个文件系统使用,其属性struct list_head mounts 维护一组使用该连接的文件系统。
 struct super_block->s_fs_info(struct fuse_mount *) struct fuse_mount->fc( struct fuse_conn *)
                                                                     ->sb(struct super_block *)
+
+```
+/*
+ * Create a new mount using a superblock configuration and request it
+ * be added to the namespace tree.
+ */
+static int do_new_mount_fc(struct fs_context *fc, struct path *mountpoint,
+                           unsigned int mnt_flags)
+{
+        struct vfsmount *mnt;
+        struct mountpoint *mp;
+        struct super_block *sb = fc->root->d_sb;
+        int error;
+
+        error = security_sb_kern_mount(sb);
+        if (!error && mount_too_revealing(sb, &mnt_flags))
+                error = -EPERM;
+
+        if (unlikely(error)) {
+                fc_drop_locked(fc);
+                return error;
+        }
+
+        up_write(&sb->s_umount);
+
+        mnt = vfs_create_mount(fc);
+        if (IS_ERR(mnt))
+                return PTR_ERR(mnt);
+
+        mnt_warn_timestamp_expiry(mountpoint, mnt);
+
+        mp = lock_mount(mountpoint);
+        if (IS_ERR(mp)) {
+                mntput(mnt);
+                return PTR_ERR(mp);
+        }
+        error = do_add_mount(real_mount(mnt), mp, mountpoint, mnt_flags);
+        unlock_mount(mp);
+        if (error < 0)
+                mntput(mnt);
+        return error;
+}
+```
+//
+```
+/**
+ * vfs_create_mount - Create a mount for a configured superblock
+ * @fc: The configuration context with the superblock attached
+ *
+ * Create a mount to an already configured superblock.  If necessary, the
+ * caller should invoke vfs_get_tree() before calling this.
+ *
+ * Note that this does not attach the mount to anything.
+ */
+struct vfsmount *vfs_create_mount(struct fs_context *fc)
+{
+        struct mount *mnt;
+
+        if (!fc->root)
+                return ERR_PTR(-EINVAL);
+
+        mnt = alloc_vfsmnt(fc->source ?: "none");
+        if (!mnt)
+                return ERR_PTR(-ENOMEM);
+
+        if (fc->sb_flags & SB_KERNMOUNT)
+                mnt->mnt.mnt_flags = MNT_INTERNAL;
+
+        atomic_inc(&fc->root->d_sb->s_active);
+        mnt->mnt.mnt_sb         = fc->root->d_sb;
+        mnt->mnt.mnt_root       = dget(fc->root);
+        mnt->mnt_mountpoint     = mnt->mnt.mnt_root;
+        mnt->mnt_parent         = mnt;
+
+        lock_mount_hash();
+        list_add_tail(&mnt->mnt_instance, &mnt->mnt.mnt_sb->s_mounts);
+        unlock_mount_hash();
+        return &mnt->mnt;
+}
+EXPORT_SYMBOL(vfs_create_mount);
+```
+
+```
+static struct mountpoint *lock_mount(struct path *path)
+{
+        struct vfsmount *mnt;
+        struct dentry *dentry = path->dentry;
+retry:
+        inode_lock(dentry->d_inode);
+        if (unlikely(cant_mount(dentry))) {
+                inode_unlock(dentry->d_inode);
+                return ERR_PTR(-ENOENT);
+        }
+        namespace_lock();
+        mnt = lookup_mnt(path);
+        if (likely(!mnt)) {
+                struct mountpoint *mp = get_mountpoint(dentry);
+                if (IS_ERR(mp)) {
+                        namespace_unlock();
+                        inode_unlock(dentry->d_inode);
+                        return mp;
+                }
+                return mp;
+        }
+        namespace_unlock();
+        inode_unlock(path->dentry->d_inode);
+        path_put(path);
+        path->mnt = mnt;
+        dentry = path->dentry = dget(mnt->mnt_root);
+        goto retry;
+}
+```
