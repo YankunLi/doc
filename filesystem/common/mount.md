@@ -267,6 +267,9 @@ static int do_new_mount_fc(struct fs_context *fc, struct path *mountpoint,
         return error;
 }
 ```
+该函数主要调用了vfs_create_mount创建vfsmount对象，lock_mount创建mountpoint对象。
+最后使用vfsmount和lock_mount作为参数调用do_add_mount。
+
 //
 ```
 /**
@@ -305,6 +308,8 @@ struct vfsmount *vfs_create_mount(struct fs_context *fc)
 }
 EXPORT_SYMBOL(vfs_create_mount);
 ```
+为新建的super_block创建struct vfsmount:描述的是一个独立文件系统的挂载信息，每个不同挂载点对应一个独立的vfsmount结构，
+属于同一文件系统的所有目录和文件隶属于同一个vfsmount，该vfsmount结构对应于该文件系统顶层目录，即挂载目录。ref[https://www.cnblogs.com/Wandererzj/archive/2012/04/12/2444888.html]
 
 ```
 static struct mountpoint *lock_mount(struct path *path)
@@ -336,3 +341,5 @@ retry:
         goto retry;
 }
 ```
+该函数获取/或创建path所对应的mountpoint对象。
+
