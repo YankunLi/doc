@@ -51,7 +51,8 @@ long do_mount(const char *dev_name, const char __user *dir_name,
         struct path path;
         int ret;
 
-        ret = user_path_at(AT_FDCWD, dir_name, LOOKUP_FOLLOW, &path); //检查是否存在，以及相关权限是否允许, 并创建path。
+        ret = user_path_at(AT_FDCWD, dir_name, LOOKUP_FOLLOW, &path); //基于挂载目录dir_name 创建struct path。
+        // 检查是否存在，以及相关权限是否允许, 并创建path。
         if (ret)
                 return ret;
         ret = path_mount(dev_name, &path, type_page, flags, data_page);
@@ -189,7 +190,7 @@ static int do_new_mount(struct path *path, const char *fstype, int sb_flags,
                 err = -EPERM;
         if (!err)
                 err = vfs_get_tree(fc); // 该函数会调用fs_context 操作对象ops的get_tree函数, 实际调用fuse_get_tree。
-                //该函数会调用vfs_get_super，分配super_block, 并调用fuse_fill_super，来设置super_block变量。同时创建根目录的dentry，inode。
+                //该函数会调用vfs_get_super，分配super_block, 并调用fuse_fill_super，来设置super_block变量。同时创建挂载目录的dentry，inode。
                 //dentry的d_inode指向对应的inode。super_block的s_root指向dentry。
                 //该函数中也初始化并实例化了fuse_conn fuse_mount,super_block的s_fs_info指向fuse_mount, fuse_mount可以索引到fuse_conn。
                 //super_block的s_d_op被指向fuse_dentry_operations变量。fuse_conn会交给fusectl文件系统管理。
@@ -376,5 +377,18 @@ static int do_add_mount(struct mount *newmnt, struct mountpoint *mp,
 }
 ```
 该函数意图是将心的mount添加到挂载树的命名空间中，核心操作在graft_tree中实现，其他只是检查新的mount 对象和老的mount相关信息。
+```
+static int graft_tree(struct mount *mnt, struct mount *p, struct mountpoint *mp)
+{
+        if (mnt->mnt.mnt_sb->s_flags & SB_NOUSER)
+                return -EINVAL;
 
+        if (d_is_dir(mp->m_dentry) !=
+              d_is_dir(mnt->mnt.mnt_root))
+                return -ENOTDIR;
+
+        return attach_recursive_mnt(mnt, p, mp, false);
+}
+```
+graft_tree主要是调用attach_recursive_mnt 函数。
 
