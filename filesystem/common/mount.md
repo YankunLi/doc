@@ -443,8 +443,8 @@ static int attach_recursive_mnt(struct mount *source_mnt,
                         /* move from anon - the caller will destroy */
                         list_del_init(&source_mnt->mnt_ns->list);
                 }
-                mnt_set_mountpoint(dest_mnt, dest_mp, source_mnt);
-                commit_tree(source_mnt);
+                mnt_set_mountpoint(dest_mnt, dest_mp, source_mnt); // 设置源mount。
+                commit_tree(source_mnt); //挂载源mount。
         }
 
         hlist_for_each_entry_safe(child, n, &tree_list, mnt_hash) {
@@ -483,5 +483,59 @@ static int attach_recursive_mnt(struct mount *source_mnt,
         return err;
 }
 ```
-```
+该函数主要通过 mnt_set_mountpoint和commit_tree, 将源mount挂载到mount_hashtable中。
 
+```
+/*
+ * vfsmount lock must be held for write
+ */
+void mnt_set_mountpoint(struct mount *mnt,
+                        struct mountpoint *mp,
+                        struct mount *child_mnt)
+{
+        mp->m_count++;
+        mnt_add_count(mnt, 1);  /* essentially, that's mntget */
+        child_mnt->mnt_mountpoint = mp->m_dentry; // 源mount的mnt_mountpoint指向挂载点的dentry。
+        child_mnt->mnt_parent = mnt; //源mount的mnt_parent指向目标mount。
+        child_mnt->mnt_mp = mp; //源mount的mnt_mp指向挂载点。
+        hlist_add_head(&child_mnt->mnt_mp_list, &mp->m_list); //把源mount连接到挂载点的m_list链表上。
+}
+```
+// 设置源mount
+
+```
+/*
+ * vfsmount lock must be held for write
+ */
+static void commit_tree(struct mount *mnt)
+{
+        struct mount *parent = mnt->mnt_parent;
+        struct mount *m;
+        LIST_HEAD(head);
+        struct mnt_namespace *n = parent->mnt_ns;
+
+        BUG_ON(parent == mnt);
+
+        list_add_tail(&head, &mnt->mnt_list);
+        list_for_each_entry(m, &head, mnt_list)
+                m->mnt_ns = n;
+
+        list_splice(&head, n->list.prev);
+
+        n->mounts += n->pending_mounts;
+        n->pending_mounts = 0;
+
+        __attach_mnt(mnt, parent); //将源mount 挂载到mount_hashtable中<目标vfsmount, 挂载点dentry> -> 源mount(通过mnt_hash连接)
+        touch_mnt_namespace(n);
+}
+```
+将源mount挂载到mount_hashtable中。
+```
+static void __attach_mnt(struct mount *mnt, struct mount *parent)
+{
+        hlist_add_head_rcu(&mnt->mnt_hash,
+                           m_hash(&parent->mnt, mnt->mnt_mountpoint));
+        list_add_tail(&mnt->mnt_child, &parent->mnt_mounts);
+}
+```
+将源mount连接到mount_hashtable<目标vfsmount, 挂载点dentry>对应的链表中。并将源mount通过mnt_child，连接到目标mount的mnt_mounts链表中。
