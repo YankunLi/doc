@@ -529,7 +529,7 @@ static void commit_tree(struct mount *mnt)
         touch_mnt_namespace(n);
 }
 ```
-将源mount挂载到mount_hashtable中。
+该函数将源mount挂载到mount_hashtable中, key是<目标vfsmount，挂载点dentry>。
 ```
 static void __attach_mnt(struct mount *mnt, struct mount *parent)
 {
@@ -538,4 +538,4 @@ static void __attach_mnt(struct mount *mnt, struct mount *parent)
         list_add_tail(&mnt->mnt_child, &parent->mnt_mounts);
 }
 ```
-将源mount连接到mount_hashtable<目标vfsmount, 挂载点dentry>对应的链表中。并将源mount通过mnt_child，连接到目标mount的mnt_mounts链表中。
+将源mount连接到mount_hashtable<目标vfsmount, 挂载点dentry>对应的链表中，并将源mount通过mnt_child，连接到目标mount的mnt_mounts链表中。
