@@ -501,7 +501,7 @@ void mnt_set_mountpoint(struct mount *mnt,
         hlist_add_head(&child_mnt->mnt_mp_list, &mp->m_list); //把源mount连接到挂载点的m_list链表上。
 }
 ```
-// 设置源mount
+// 设置源mount的挂载点的dentry mnt_mountpoint, 目标挂载点mnt_parent, 源挂载点的关注点mnt_mp。
 
 ```
 /*
