@@ -225,6 +225,8 @@ static const struct fs_context_operations fuse_context_ops = {
 struct fuse_conn可供多个文件系统使用,其属性struct list_head mounts 维护一组使用该连接的文件系统。
 struct super_block->s_fs_info(struct fuse_mount *) struct fuse_mount->fc( struct fuse_conn *)
                                                                     ->sb(struct super_block *)
+每个挂载的fuse实例，都对应一个connection，并且可通过fuseclt文件系统管理这些connection。在/sys/fs/fuse/目录下，有与每个挂载实例对应的目录，目录名是分配给挂载实例的唯一标识id。
+linux为每个没有对应实体的设备分配了一个虚拟的id。针对fuse文件系统实例，查看其标识id，可通过 Stat函数获取, st_dev就是设备的标识。
 
 ```
 /*
