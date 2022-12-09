@@ -544,3 +544,6 @@ static void __attach_mnt(struct mount *mnt, struct mount *parent)
 }
 ```
 将源mount连接到mount_hashtable<目标vfsmount, 挂载点dentry>对应的链表中，并将源mount通过mnt_child，连接到目标mount的mnt_mounts链表中。
+
+## 总结：
+    linux挂载文件系统主要分为三个阶段：创建源文件系统，查找目的文件系统的最终挂载目录并创建挂载节点，最后将源文件系统关联到挂载节点上。
