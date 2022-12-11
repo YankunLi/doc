@@ -1,7 +1,6 @@
 # Fuse Open
 
 fuse open可分成两部分，一部分是fuse文件系统的内核实现部分, 主要是将文件打开请求封装成fuse_req，提交给用户态文件系统处理，另一部分是用户态文件系统的实现部分，是文件系统相关操作的实现。本文主要分析第一部分。
-
 fuse文件系统中实现open的函数是：fuse_open
 ```
 static int fuse_open(struct inode *inode, struct file *file)
@@ -286,8 +285,9 @@ static void request_wait_answer(struct fuse_req *req)
         wait_event(req->waitq, test_bit(FR_FINISHED, &req->flags));
 }
 ```
-- 该函数先判断fuse是否实现了中断函数，如果实现了，就检查是否有中断请求，如果有，则中断请求可以中断当前的正常请求。
-- wait_event 监听在fuse_req->waitq上等待请求返回结果。 如果请求返回会回到fuse_do_open处。
+- 该函数先判断fuse是否实现了中断函数，如果实现了，就使用wait_event_interruptib可中断的阻塞在fuse_req->waitq上。
+- 如果req-flags 设置了FR_FORCE，则使用wait_event_killable，可变kill可被faltal signal信号中断的阻塞在fuse_req->waitq上。
+- wait_event 监听在fuse_req->waitq上等待请求返回结果, 切不可中断。 如果请求返回会回到fuse_do_open处。
 
 ## fuse_finish_open:
 ```
